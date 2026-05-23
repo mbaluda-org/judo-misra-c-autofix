@@ -24,55 +24,18 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#if defined(_WIN32)
-#include <windows.h>
-#else
-#include <sys/mman.h>
-#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-#endif
-
 char *judo_readstdin(size_t *size);
 
 //! [parser_process_memory]
-struct example_allocation_header
+void *memfunc(void *user_data, void *ptr, size_t size)
 {
-    size_t size;
-};
-
-void *example_mem_allocator(void *user_data, void *ptr, size_t size)
-{
-    (void)user_data;
-
     if (ptr == NULL)
     {
-        const size_t total_size = sizeof(struct example_allocation_header) + size;
-#if defined(_WIN32)
-        struct example_allocation_header *header = VirtualAlloc(NULL, total_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-        if (header == NULL)
-        {
-            return NULL;
-        }
-#else
-        struct example_allocation_header *header = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        if (header == MAP_FAILED)
-        {
-            return NULL;
-        }
-#endif
-        header->size = total_size;
-        return &header[1];
+        return malloc(size);
     }
-
+    else
     {
-        struct example_allocation_header *header = &((struct example_allocation_header *)ptr)[-1];
-        (void)size;
-#if defined(_WIN32)
-        (void)VirtualFree(header, 0, MEM_RELEASE);
-#else
-        (void)munmap(header, header->size);
-#endif
+        free(ptr);
         return NULL;
     }
 }
@@ -80,123 +43,62 @@ void *example_mem_allocator(void *user_data, void *ptr, size_t size)
 
 void print_tree(const char *source, struct judo_value *value)
 {
-    struct print_frame
-    {
-        struct judo_value *value;
-        struct judo_value *element;
-        struct judo_member *member;
-        uint8_t state;
-    };
-
     struct judo_span span;
-    int32_t depth = 1;
-    struct print_frame stack[JUDO_MAXDEPTH + 1] = {0};
+    struct judo_value *elem;
+    struct judo_member *member;
 
-    stack[0].value = value;
-    while (depth > 0)
+//! [parser_process_traverse]
+    switch (judo_gettype(value))
     {
-        struct print_frame *top = &stack[depth - 1];
-
-//! [parser_process_traverse]
-        if (top->state == 0U)
-        {
-            switch (judo_gettype(top->value))
-            {
-            case JUDO_TYPE_NULL:
-            case JUDO_TYPE_BOOL:
-            case JUDO_TYPE_NUMBER:
-            case JUDO_TYPE_STRING:
-                span = judo_value2span(top->value);
-                printf("%.*s", span.length, &source[span.offset]);
-                depth -= 1;
-                break;
+    case JUDO_TYPE_NULL:
+    case JUDO_TYPE_BOOL:
+    case JUDO_TYPE_NUMBER:
+    case JUDO_TYPE_STRING:
+        span = judo_value2span(value);
+        printf("%.*s", span.length, &source[span.offset]);
+        break;
     // [cont...]
 //! [parser_process_traverse]
 
 //! [parser_process_array]
-            case JUDO_TYPE_ARRAY:
-                putchar('[');
-                top->element = judo_first(top->value);
-                if (top->element == NULL)
-                {
-                    putchar(']');
-                    depth -= 1;
-                }
-                else
-                {
-                    top->state = 1U;
-                    stack[depth] = (struct print_frame){
-                        .value = top->element,
-                    };
-                    depth += 1;
-                }
-                break;
+    case JUDO_TYPE_ARRAY:
+        putchar('[');
+        elem = judo_first(value);
+        while (elem != NULL)
+        {
+            print_tree(source, elem);
+            if (judo_next(elem) != NULL)
+            {
+                putchar(',');
+            }
+            elem = judo_next(elem);
+        }
+        putchar(']');
+        break;
     // [cont...]
 //! [parser_process_array]
 
 //! [parser_process_object]
-            case JUDO_TYPE_OBJECT:
-                putchar('{');
-                top->member = judo_membfirst(top->value);
-                if (top->member == NULL)
-                {
-                    putchar('}');
-                    depth -= 1;
-                }
-                else
-                {
-                    top->state = 2U;
-                    span = judo_name2span(top->member);
-                    printf("%.*s:", span.length, &source[span.offset]);
-                    stack[depth] = (struct print_frame){
-                        .value = judo_membvalue(top->member),
-                    };
-                    depth += 1;
-                }
-                break;
+    case JUDO_TYPE_OBJECT:
+        putchar('{');
+        member = judo_membfirst(value);
+        while (member != NULL)
+        {
+            span = judo_name2span(member);
+            printf("%.*s:", span.length, &source[span.offset]);
+            print_tree(source, judo_membvalue(member));
+            if (judo_membnext(member) != NULL)
+            {
+                putchar(',');
+            }
+            member = judo_membnext(member);
+        }
+        putchar('}');
+        break;
 //! [parser_process_object]
 
-            default:
-                depth -= 1;
-                break;
-            }
-        }
-        else if (top->state == 1U)
-        {
-            top->element = judo_next(top->element);
-            if (top->element == NULL)
-            {
-                putchar(']');
-                depth -= 1;
-            }
-            else
-            {
-                putchar(',');
-                stack[depth] = (struct print_frame){
-                    .value = top->element,
-                };
-                depth += 1;
-            }
-        }
-        else
-        {
-            top->member = judo_membnext(top->member);
-            if (top->member == NULL)
-            {
-                putchar('}');
-                depth -= 1;
-            }
-            else
-            {
-                putchar(',');
-                span = judo_name2span(top->member);
-                printf("%.*s:", span.length, &source[span.offset]);
-                stack[depth] = (struct print_frame){
-                    .value = judo_membvalue(top->member),
-                };
-                depth += 1;
-            }
-        }
+    default:
+        break;
     }
 }
 
@@ -215,11 +117,11 @@ int main(int argc, char *argv[])
 //! [parser_process_input]
     struct judo_error error = {0};
     struct judo_value *root;
-    enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, example_mem_allocator);
+    enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, memfunc);
     if (result == JUDO_RESULT_SUCCESS)
     {
         print_tree(json, root);
-        judo_free(root, NULL, example_mem_allocator);
+        judo_free(root, NULL, memfunc);
     }
     else
     {
