@@ -145,20 +145,20 @@ static void print_tree(struct judo_value *value, const char *source, const struc
         break;
 
     case JUDO_TYPE_ARRAY:
-        (void)putchar('[');
+        putchar('[');
         for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
         {
             print_tree(elem, source, options);
             if (judo_next(elem) != NULL)
             {
-                (void)putchar(',');
+                putchar(',');
             }
         }
-        (void)putchar(']');
+        putchar(']');
         break;
 
     case JUDO_TYPE_OBJECT:
-        (void)putchar('{');
+        putchar('{');
         for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
         {
             where = judo_name2span(member);
@@ -166,10 +166,10 @@ static void print_tree(struct judo_value *value, const char *source, const struc
             print_tree(judo_membvalue(member), source, options);
             if (judo_membnext(member) != NULL)
             {
-                (void)putchar(',');
+                putchar(',');
             }
         }
-        (void)putchar('}');
+        putchar('}');
         break;
 
     default:
@@ -467,13 +467,15 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "error: invalid or missing indention width\n");
                 exit(3);
             }
-            else if (value >= UINT16_MAX || value == 0)
+            else if ((value >= (unsigned long)UINT16_MAX) || (value == 0UL))
             {
                 fprintf(stderr, "error: indention width is too large or small\n");
                 exit(3);
             }
-
-            options.indention_width = (int)value;
+            else
+            {
+                options.indention_width = (int)value;
+            }
             continue;
         }
 
