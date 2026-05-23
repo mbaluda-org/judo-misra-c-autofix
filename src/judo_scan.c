@@ -410,7 +410,7 @@ static int32_t utf8_encode(unichar codepoint, char bytes[4])
     return length;
 }
 
-static unichar parse_character(const char *string)
+static unichar parse_character(const char string[])
 {
     unichar codepoint = UNICHAR_C(0x0);
     int32_t index = 0;
@@ -444,7 +444,7 @@ static unichar parse_character(const char *string)
     return codepoint;
 }
 
-static bool is_match(const uint8_t *string, const char *prefix, int32_t string_length)
+static bool is_match(const uint8_t string[], const char prefix[], int32_t string_length)
 {
     bool match = true;
     int32_t index = 0;
@@ -475,7 +475,7 @@ static bool is_match(const uint8_t *string, const char *prefix, int32_t string_l
 #if defined(JUDO_HAVE_FLOATS)
 #if defined(JUDO_JSON5)
 // This atol() implementation exclusively parses hexidecimal numbers.
-static enum judo_result json_atol(const char *string, int32_t string_length, judo_number *number)
+static enum judo_result json_atol(const char string[], int32_t string_length, judo_number *number)
 {
     enum judo_result result;
     judo_number value = (judo_number)0.0;
@@ -544,7 +544,7 @@ static enum judo_result json_atol(const char *string, int32_t string_length, jud
 #endif
 
 // Locale independent atof() implementation.
-static enum judo_result json_atof(const char *string, int32_t string_length, judo_number *number)
+static enum judo_result json_atof(const char string[], int32_t string_length, judo_number *number)
 {
     enum judo_result result;
     judo_number value = (judo_number)0.0;
