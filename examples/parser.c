@@ -27,8 +27,9 @@
 char *judo_readstdin(size_t *size);
 
 //! [parser_process_memory]
-void *memfunc(void *, void *ptr, size_t size)
+static void *memfunc(void *user_data, void *ptr, size_t size)
 {
+    (void)user_data;
     if (ptr == NULL)
     {
         return malloc(size);

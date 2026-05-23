@@ -268,8 +268,9 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
     }
 }
 
-static void *memfunc(void *, void *ptr, size_t size)
+static void *memfunc(void *user_data, void *ptr, size_t size)
 {
+    (void)user_data;
     if (ptr == NULL)
     {
         return malloc(size);
