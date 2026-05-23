@@ -107,7 +107,7 @@ void print_tree(const char *source, struct judo_value *value)
 
 int main(void)
 {
-    int retval = 0;
+    int32_t retval = 0;
 
 //! [parser_process_stdin]
     size_t json_len = 0;
@@ -137,5 +137,5 @@ int main(void)
 //! [parser_process_input]
     }
 
-    return retval;
+    return (int)retval;
 }

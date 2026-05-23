@@ -53,7 +53,7 @@ static void process_token(struct judo_stream stream, const char *json)
 
 int main(void)
 {
-    int retval = 0;
+    int32_t retval = 0;
 
 //! [scanner_process_stdin]
     size_t json_len = 0;
@@ -90,5 +90,5 @@ int main(void)
 //! [scanner_process_stream]
     }
 
-    return retval;
+    return (int)retval;
 }
