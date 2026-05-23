@@ -141,7 +141,7 @@ static void print_tree(struct judo_value *value, const char *source, const struc
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         where = judo_value2span(value);
-        printf("%.*s", where.length, &source[where.offset]);
+        (void) printf("%.*s", where.length, &source[where.offset]);
         break;
 
     case JUDO_TYPE_ARRAY:
@@ -187,12 +187,12 @@ static void pretty_print_indent(int depth, const struct program_options *options
         {
             for (int i = 0; i < depth; i++)
             {
-                putchar('\t');
+                (void) putchar('\t');
             }
         }
         else
         {
-            printf("%*c", depth * options->indention_width, ' ');
+            (void) printf("%*c", depth * options->indention_width, ' ');
         }
     }
 }
@@ -207,17 +207,17 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         where = judo_value2span(value);
-        printf("%.*s", where.length, &source[where.offset]);
+        (void) printf("%.*s", where.length, &source[where.offset]);
         break;
 
     case JUDO_TYPE_ARRAY:
         if (judo_len(value) == 0)
         {
-            printf("[]");
+            (void) printf("[]");
         }
         else
         {
-            puts("[");
+            (void) puts("[");
             for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
             {
                 pretty_print_indent(depth + 1, options);
@@ -225,41 +225,41 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
 
                 if (judo_next(elem) != NULL)
                 {
-                    putchar(',');
+                    (void) putchar(',');
                 }
-                putchar('\n');
+                (void) putchar('\n');
             }
             pretty_print_indent(depth, options);
-            putchar(']');
+            (void) putchar(']');
         }
         break;
 
     case JUDO_TYPE_OBJECT:
         if (judo_len(value) ==0)
         {
-            printf("{}");
+            (void) printf("{}");
         }
         else
         {
-            puts("{");
+            (void) puts("{");
             for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
             {
                 pretty_print_indent(depth + 1, options);
 
                 where = judo_name2span(member);
-                printf("%.*s: ", where.length, &source[where.offset]);
+                (void) printf("%.*s: ", where.length, &source[where.offset]);
 
                 pretty_print_tree(judo_membvalue(member), source, depth + 1, options);
 
                 if (judo_membnext(member) != NULL)
                 {
-                    putchar(',');
+                    (void) putchar(',');
                 }
-                putchar('\n');
+                (void) putchar('\n');
             }
 
             pretty_print_indent(depth, options);
-            putchar('}');
+            (void) putchar('}');
         }
         break;
 
@@ -287,7 +287,7 @@ static void judo_main(const struct program_options *options)
     char *dynbuf = judo_readstdin(&dynbuf_length);
     if (dynbuf == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
+        (void) fprintf(stderr, "error: failed to read stdin\n");
         exit(2);
     }
 
@@ -298,14 +298,14 @@ static void judo_main(const struct program_options *options)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
         {
-            fprintf(stderr, "error: memory allocation failed\n");
+            (void) fprintf(stderr, "error: memory allocation failed\n");
             free(dynbuf);
             exit(2);
         }
 
         int line, column;
         compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
-        fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
+        (void) fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
         free(dynbuf);
         exit(1);
     }
@@ -323,7 +323,7 @@ static void judo_main(const struct program_options *options)
     }
 
     free(dynbuf);
-    judo_free(root, NULL, memfunc);
+    (void) judo_free(root, NULL, memfunc);
 }
 
 int main(int argc, char *argv[])
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
         if (strcmp(arg, "-v") == 0 ||
             strcmp(arg, "--version") == 0)
         {
-            puts("1.1.0");
+            (void) puts("1.1.0");
             exit(0);
         }
 
@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
             {
                 if (i == argc - 1)
                 {
-                    fprintf(stderr, "error: expected indention width\n");
+                    (void) fprintf(stderr, "error: expected indention width\n");
                     exit(3);
                 }
                 i += 1;
@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
             {
                 if (arg[8] != '=')
                 {
-                    fprintf(stderr, "error: expected indention width\n");
+                    (void) fprintf(stderr, "error: expected indention width\n");
                     exit(3);
                 }
                 arg += 9;
@@ -464,12 +464,12 @@ int main(int argc, char *argv[])
             const unsigned long value = strtoul(arg, &endptr, 10);
             if (endptr == arg || errno == ERANGE)
             {
-                fprintf(stderr, "error: invalid or missing indention width\n");
+                (void) fprintf(stderr, "error: invalid or missing indention width\n");
                 exit(3);
             }
             else if (value >= UINT16_MAX || value == 0)
             {
-                fprintf(stderr, "error: indention width is too large or small\n");
+                (void) fprintf(stderr, "error: indention width is too large or small\n");
                 exit(3);
             }
 
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        fprintf(stderr, "error: unknown option '%s'\n", arg);
+        (void) fprintf(stderr, "error: unknown option '%s'\n", arg);
         exit(3);
     }
 
