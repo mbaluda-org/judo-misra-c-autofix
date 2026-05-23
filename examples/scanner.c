@@ -53,37 +53,42 @@ static void process_token(struct judo_stream stream, const char *json)
 
 int main(void)
 {
+    int retval = 0;
+
 //! [scanner_process_stdin]
     size_t json_len = 0;
     const char *json = judo_readstdin(&json_len);
 //! [scanner_process_stdin]
     if (json == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
-        return 2;
+        (void)fprintf(stderr, "error: failed to read stdin\n");
+        retval = 2;
     }
-
-//! [scanner_process_stream]
-    struct judo_stream stream = {0};
-    enum judo_result result;
-    for (;;)
+    else
     {
-        result = judo_scan(&stream, json, json_len);
-        if (result == JUDO_RESULT_SUCCESS)
+//! [scanner_process_stream]
+        struct judo_stream stream = {0};
+        enum judo_result result;
+        for (;;)
         {
-            if (stream.token == JUDO_TOKEN_EOF)
+            result = judo_scan(&stream, json, json_len);
+            if (result == JUDO_RESULT_SUCCESS)
             {
+                if (stream.token == JUDO_TOKEN_EOF)
+                {
+                    break;
+                }
+                process_token(stream, json);
+            }
+            else
+            {
+                (void)fprintf(stderr, "error: %s\n", stream.error);
+                retval = 1;
                 break;
             }
-            process_token(stream, json);
         }
-        else
-        {
-            fprintf(stderr, "error: %s\n", stream.error);
-            return 1;
-        }
-    }
 //! [scanner_process_stream]
+    }
 
-    return 0;
+    return retval;
 }

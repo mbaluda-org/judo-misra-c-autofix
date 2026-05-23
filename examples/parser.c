@@ -29,16 +29,18 @@ char *judo_readstdin(size_t *size);
 //! [parser_process_memory]
 static void *memfunc(void *user_data, void *ptr, size_t size)
 {
+    void *result;
     (void)user_data;
     if (ptr == NULL)
     {
-        return malloc(size);
+        result = malloc(size);
     }
     else
     {
         free(ptr);
-        return NULL;
+        result = NULL;
     }
+    return result;
 }
 //! [parser_process_memory]
 
@@ -113,7 +115,7 @@ int main(void)
 //! [parser_process_stdin]
     if (json == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
+        (void)fprintf(stderr, "error: failed to read stdin\n");
         retval = 2;
     }
     else
@@ -121,15 +123,15 @@ int main(void)
 //! [parser_process_input]
         struct judo_error error = {0};
         struct judo_value *root;
-        enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, memfunc);
+        enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, &memfunc);
         if (result == JUDO_RESULT_SUCCESS)
         {
             print_tree(json, root);
-            judo_free(root, NULL, memfunc);
+            (void)judo_free(root, NULL, &memfunc);
         }
         else
         {
-            fprintf(stderr, "error: %s\n", error.description);
+            (void)fprintf(stderr, "error: %s\n", error.description);
             retval = 1;
         }
 //! [parser_process_input]
