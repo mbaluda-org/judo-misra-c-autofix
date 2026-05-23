@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "error: invalid or missing indention width\n");
                 exit(3);
             }
-            else if ((value >= UINT16_MAX) || (value == 0))
+            else if ((value >= (unsigned long)UINT16_MAX) || (value == 0UL))
             {
                 fprintf(stderr, "error: indention width is too large or small\n");
                 exit(3);
