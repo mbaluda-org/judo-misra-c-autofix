@@ -71,7 +71,7 @@ int main(void)
         enum judo_result result;
         for (;;)
         {
-            result = judo_scan(&stream, json, json_len);
+            result = (enum judo_result)judo_scan(&stream, json, json_len);
             if (result == JUDO_RESULT_SUCCESS)
             {
                 if (stream.token == JUDO_TOKEN_EOF)
