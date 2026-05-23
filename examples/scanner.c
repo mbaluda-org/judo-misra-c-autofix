@@ -51,7 +51,7 @@ static void process_token(struct judo_stream stream, const char *json)
 //! [scanner_process_token]
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
 //! [scanner_process_stdin]
     size_t json_len = 0;

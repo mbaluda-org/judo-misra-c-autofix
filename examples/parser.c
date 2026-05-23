@@ -27,7 +27,7 @@
 char *judo_readstdin(size_t *size);
 
 //! [parser_process_memory]
-void *memfunc(void *user_data, void *ptr, size_t size)
+void *memfunc(void *, void *ptr, size_t size)
 {
     if (ptr == NULL)
     {
@@ -102,7 +102,7 @@ void print_tree(const char *source, struct judo_value *value)
     }
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
 //! [parser_process_stdin]
     size_t json_len = 0;
