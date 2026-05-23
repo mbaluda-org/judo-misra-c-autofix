@@ -67,7 +67,7 @@ struct parse_stack
 struct context
 {
     void *udata; // User pointer passed through to the users custom memory allocator function.
-    judo_memfunc memfunc; // User custom memory allocation function.
+    judo_memfunc alloc_func; // User custom memory allocation function.
     const char *string;
     judo_value *root; // Root value of the JSON structure.
     int32_t stack_depth;
@@ -76,7 +76,7 @@ struct context
 
 static void *judo_alloc(struct context *ctx, size_t size)
 {
-    void *ptr = ctx->memfunc(ctx->udata, NULL, size);
+    void *ptr = ctx->alloc_func(ctx->udata, NULL, size);
     if (ptr != NULL)
     {
         (void)memset(ptr, 0, size);
@@ -337,7 +337,7 @@ enum judo_result judo_parse(const char *source, int32_t length, judo_value **roo
         struct context ctx = {
             .string = source,
             .udata = udata,
-            .memfunc = memfunc,
+            .alloc_func = memfunc,
         };
 
         for (;;)

@@ -27,7 +27,7 @@
 char *judo_readstdin(size_t *size);
 
 //! [parser_process_memory]
-void *memfunc(void *user_data, void *ptr, size_t size)
+static void *memfunc(void *user_data, void *ptr, size_t size)
 {
     if (ptr == NULL)
     {
@@ -41,7 +41,7 @@ void *memfunc(void *user_data, void *ptr, size_t size)
 }
 //! [parser_process_memory]
 
-void print_tree(const char *source, struct judo_value *value)
+static void print_tree(const char *source, struct judo_value *value)
 {
     struct judo_span span;
     struct judo_value *elem;

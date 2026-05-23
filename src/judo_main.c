@@ -145,20 +145,20 @@ static void print_tree(struct judo_value *value, const char *source, const struc
         break;
 
     case JUDO_TYPE_ARRAY:
-        putchar('[');
+        (void)putchar('[');
         for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
         {
             print_tree(elem, source, options);
             if (judo_next(elem) != NULL)
             {
-                putchar(',');
+                (void)putchar(',');
             }
         }
-        putchar(']');
+        (void)putchar(']');
         break;
 
     case JUDO_TYPE_OBJECT:
-        putchar('{');
+        (void)putchar('{');
         for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
         {
             where = judo_name2span(member);
@@ -166,10 +166,10 @@ static void print_tree(struct judo_value *value, const char *source, const struc
             print_tree(judo_membvalue(member), source, options);
             if (judo_membnext(member) != NULL)
             {
-                putchar(',');
+                (void)putchar(',');
             }
         }
-        putchar('}');
+        (void)putchar('}');
         break;
 
     default:
@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
             char *endptr = NULL;
             errno = 0;
             const unsigned long value = strtoul(arg, &endptr, 10);
-            if (endptr == arg || errno == ERANGE)
+            if ((endptr == arg) || (errno != 0))
             {
                 fprintf(stderr, "error: invalid or missing indention width\n");
                 exit(3);
