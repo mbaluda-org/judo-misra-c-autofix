@@ -100,7 +100,7 @@ static void compulate_source_location(const char *input, int32_t input_length, i
     int32_t at = 0;
     while (at < location)
     {
-        if ((at < location + 1) && (at < input_length - 2))
+        if ((at < (location + 1)) && (at < (input_length - 2)))
         {
             if (memcmp(&input[at], "\r\n", 2) == 0)
             {
@@ -338,8 +338,8 @@ int main(int argc, char *argv[])
     {
         const char *arg = argv[i];
 
-        if (strcmp(arg, "-h") == 0 ||
-            strcmp(arg, "--help") == 0)
+        if ((strcmp(arg, "-h") == 0) ||
+            (strcmp(arg, "--help") == 0))
         {
             puts("Usage: judo [options...]");
             puts("");
@@ -400,48 +400,48 @@ int main(int argc, char *argv[])
             exit(0);
         }
 
-        if (strcmp(arg, "-v") == 0 ||
-            strcmp(arg, "--version") == 0)
+        if ((strcmp(arg, "-v") == 0) ||
+            (strcmp(arg, "--version") == 0))
         {
             puts("1.1.0");
             exit(0);
         }
 
-        if (strcmp(arg, "-q") == 0 ||
-            strcmp(arg, "--quite") == 0)
+        if ((strcmp(arg, "-q") == 0) ||
+            (strcmp(arg, "--quite") == 0))
         {
             options.suppress_output = true;
             continue;
         }
 
-        if (strcmp(arg, "-p") == 0 ||
-            strcmp(arg, "--pretty") == 0)
+        if ((strcmp(arg, "-p") == 0) ||
+            (strcmp(arg, "--pretty") == 0))
         {
             options.pretty_print = true;
             continue;
         }
 
-        if (strcmp(arg, "-t") == 0 ||
-            strcmp(arg, "--tabs") == 0)
+        if ((strcmp(arg, "-t") == 0) ||
+            (strcmp(arg, "--tabs") == 0))
         {
             options.use_tabs = true;
             continue;
         }
 
 
-        if (strcmp(arg, "-e") == 0 ||
-            strcmp(arg, "--escape") == 0)
+        if ((strcmp(arg, "-e") == 0) ||
+            (strcmp(arg, "--escape") == 0))
         {
             options.escape_unicode = true;
             continue;
         }
 
-        if (strcmp(arg, "-i") == 0 ||
-            strncmp(arg, "--indent", 8) == 0)
+        if ((strcmp(arg, "-i") == 0) ||
+            (strncmp(arg, "--indent", 8) == 0))
         {
             if (arg[1] == 'i')
             {
-                if (i == argc - 1)
+                if (i == (argc - 1))
                 {
                     fprintf(stderr, "error: expected indention width\n");
                     exit(3);
@@ -462,12 +462,12 @@ int main(int argc, char *argv[])
             char *endptr = NULL;
             errno = 0;
             const unsigned long value = strtoul(arg, &endptr, 10);
-            if (endptr == arg || errno == ERANGE)
+            if ((endptr == arg) || (errno == ERANGE))
             {
                 fprintf(stderr, "error: invalid or missing indention width\n");
                 exit(3);
             }
-            else if (value >= UINT16_MAX || value == 0)
+            else if ((value >= UINT16_MAX) || (value == 0))
             {
                 fprintf(stderr, "error: indention width is too large or small\n");
                 exit(3);
