@@ -25,6 +25,15 @@
 #include <assert.h>
 #include <errno.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+#endif
+
 char *judo_readstdin(size_t *size);
 
 struct program_options
@@ -133,47 +142,115 @@ static void compulate_source_location(const char *input, int32_t input_length, i
 
 static void print_tree(struct judo_value *value, const char *source, const struct program_options *options)
 {
-    struct judo_span where = {0};
-    switch (judo_gettype(value))
+    struct print_frame
     {
-    case JUDO_TYPE_NULL:
-    case JUDO_TYPE_BOOL:
-    case JUDO_TYPE_NUMBER:
-    case JUDO_TYPE_STRING:
-        where = judo_value2span(value);
-        printf("%.*s", where.length, &source[where.offset]);
-        break;
+        struct judo_value *value;
+        struct judo_value *element;
+        struct judo_member *member;
+        uint8_t state;
+    };
 
-    case JUDO_TYPE_ARRAY:
-        putchar('[');
-        for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
+    int32_t stack_depth = 1;
+    struct judo_span where = {0};
+    struct print_frame stack[JUDO_MAXDEPTH + 1] = {0};
+    (void)options;
+
+    stack[0].value = value;
+    while (stack_depth > 0)
+    {
+        struct print_frame *top = &stack[stack_depth - 1];
+        if (top->state == 0U)
         {
-            print_tree(elem, source, options);
-            if (judo_next(elem) != NULL)
+            switch (judo_gettype(top->value))
             {
-                putchar(',');
+            case JUDO_TYPE_NULL:
+            case JUDO_TYPE_BOOL:
+            case JUDO_TYPE_NUMBER:
+            case JUDO_TYPE_STRING:
+                where = judo_value2span(top->value);
+                printf("%.*s", where.length, &source[where.offset]);
+                stack_depth -= 1;
+                break;
+
+            case JUDO_TYPE_ARRAY:
+                putchar('[');
+                top->element = judo_first(top->value);
+                if (top->element == NULL)
+                {
+                    putchar(']');
+                    stack_depth -= 1;
+                }
+                else
+                {
+                    top->state = 1U;
+                    stack[stack_depth] = (struct print_frame){
+                        .value = top->element,
+                    };
+                    stack_depth += 1;
+                }
+                break;
+
+            case JUDO_TYPE_OBJECT:
+                putchar('{');
+                top->member = judo_membfirst(top->value);
+                if (top->member == NULL)
+                {
+                    putchar('}');
+                    stack_depth -= 1;
+                }
+                else
+                {
+                    top->state = 2U;
+                    where = judo_name2span(top->member);
+                    printf("%.*s:", where.length, &source[where.offset]);
+                    stack[stack_depth] = (struct print_frame){
+                        .value = judo_membvalue(top->member),
+                    };
+                    stack_depth += 1;
+                }
+                break;
+
+            default:
+                stack_depth -= 1;
+                break;
             }
         }
-        putchar(']');
-        break;
-
-    case JUDO_TYPE_OBJECT:
-        putchar('{');
-        for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
+        else if (top->state == 1U)
         {
-            where = judo_name2span(member);
-            printf("%.*s:", where.length, &source[where.offset]);
-            print_tree(judo_membvalue(member), source, options);
-            if (judo_membnext(member) != NULL)
+            top->element = judo_next(top->element);
+            if (top->element == NULL)
+            {
+                putchar(']');
+                stack_depth -= 1;
+            }
+            else
             {
                 putchar(',');
+                stack[stack_depth] = (struct print_frame){
+                    .value = top->element,
+                };
+                stack_depth += 1;
             }
         }
-        putchar('}');
-        break;
-
-    default:
-        break;
+        else
+        {
+            top->member = judo_membnext(top->member);
+            if (top->member == NULL)
+            {
+                putchar('}');
+                stack_depth -= 1;
+            }
+            else
+            {
+                putchar(',');
+                where = judo_name2span(top->member);
+                printf("%.*s:", where.length, &source[where.offset]);
+                stack[stack_depth] = (struct print_frame){
+                    .value = judo_membvalue(top->member),
+                };
+                stack_depth += 1;
+            }
+        }
     }
 }
 
@@ -187,7 +264,7 @@ static void pretty_print_indent(int depth, const struct program_options *options
         {
             for (int i = 0; i < depth; i++)
             {
-                putchar('\t');
+                putchar('	');
             }
         }
         else
@@ -199,84 +276,170 @@ static void pretty_print_indent(int depth, const struct program_options *options
 
 static void pretty_print_tree(struct judo_value *value, const char *source, int depth, const struct program_options *options)
 {
-    struct judo_span where = {0};
-    switch (judo_gettype(value))
+    struct pretty_print_frame
     {
-    case JUDO_TYPE_NULL:
-    case JUDO_TYPE_BOOL:
-    case JUDO_TYPE_NUMBER:
-    case JUDO_TYPE_STRING:
-        where = judo_value2span(value);
-        printf("%.*s", where.length, &source[where.offset]);
-        break;
+        struct judo_value *value;
+        struct judo_value *element;
+        struct judo_member *member;
+        int indent;
+        uint8_t state;
+    };
 
-    case JUDO_TYPE_ARRAY:
-        if (judo_len(value) == 0)
+    int32_t stack_depth = 1;
+    struct judo_span where = {0};
+    struct pretty_print_frame stack[JUDO_MAXDEPTH + 1] = {0};
+
+    stack[0].value = value;
+    stack[0].indent = depth;
+    while (stack_depth > 0)
+    {
+        struct pretty_print_frame *top = &stack[stack_depth - 1];
+        if (top->state == 0U)
         {
-            printf("[]");
-        }
-        else
-        {
-            puts("[");
-            for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
+            switch (judo_gettype(top->value))
             {
-                pretty_print_indent(depth + 1, options);
-                pretty_print_tree(elem, source, depth + 1, options);
+            case JUDO_TYPE_NULL:
+            case JUDO_TYPE_BOOL:
+            case JUDO_TYPE_NUMBER:
+            case JUDO_TYPE_STRING:
+                where = judo_value2span(top->value);
+                printf("%.*s", where.length, &source[where.offset]);
+                stack_depth -= 1;
+                break;
 
-                if (judo_next(elem) != NULL)
+            case JUDO_TYPE_ARRAY:
+                if (judo_len(top->value) == 0)
                 {
-                    putchar(',');
+                    printf("[]");
+                    stack_depth -= 1;
                 }
-                putchar('\n');
-            }
-            pretty_print_indent(depth, options);
-            putchar(']');
-        }
-        break;
+                else
+                {
+                    puts("[");
+                    top->element = judo_first(top->value);
+                    top->state = 1U;
+                    pretty_print_indent(top->indent + 1, options);
+                    stack[stack_depth] = (struct pretty_print_frame){
+                        .value = top->element,
+                        .indent = top->indent + 1,
+                    };
+                    stack_depth += 1;
+                }
+                break;
 
-    case JUDO_TYPE_OBJECT:
-        if (judo_len(value) ==0)
+            case JUDO_TYPE_OBJECT:
+                if (judo_len(top->value) == 0)
+                {
+                    printf("{}");
+                    stack_depth -= 1;
+                }
+                else
+                {
+                    puts("{");
+                    top->member = judo_membfirst(top->value);
+                    top->state = 2U;
+                    pretty_print_indent(top->indent + 1, options);
+                    where = judo_name2span(top->member);
+                    printf("%.*s: ", where.length, &source[where.offset]);
+                    stack[stack_depth] = (struct pretty_print_frame){
+                        .value = judo_membvalue(top->member),
+                        .indent = top->indent + 1,
+                    };
+                    stack_depth += 1;
+                }
+                break;
+
+            default:
+                stack_depth -= 1;
+                break;
+            }
+        }
+        else if (top->state == 1U)
         {
-            printf("{}");
+            top->element = judo_next(top->element);
+            if (top->element == NULL)
+            {
+                putchar('\n');
+                pretty_print_indent(top->indent, options);
+                putchar(']');
+                stack_depth -= 1;
+            }
+            else
+            {
+                putchar(',');
+                putchar('\n');
+                pretty_print_indent(top->indent + 1, options);
+                stack[stack_depth] = (struct pretty_print_frame){
+                    .value = top->element,
+                    .indent = top->indent + 1,
+                };
+                stack_depth += 1;
+            }
         }
         else
         {
-            puts("{");
-            for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
+            top->member = judo_membnext(top->member);
+            if (top->member == NULL)
             {
-                pretty_print_indent(depth + 1, options);
-
-                where = judo_name2span(member);
+                putchar('\n');
+                pretty_print_indent(top->indent, options);
+                putchar('}');
+                stack_depth -= 1;
+            }
+            else
+            {
+                putchar(',');
+                putchar('\n');
+                pretty_print_indent(top->indent + 1, options);
+                where = judo_name2span(top->member);
                 printf("%.*s: ", where.length, &source[where.offset]);
-
-                pretty_print_tree(judo_membvalue(member), source, depth + 1, options);
-
-                if (judo_membnext(member) != NULL)
-                {
-                    putchar(',');
-                }
-                putchar('\n');
+                stack[stack_depth] = (struct pretty_print_frame){
+                    .value = judo_membvalue(top->member),
+                    .indent = top->indent + 1,
+                };
+                stack_depth += 1;
             }
-
-            pretty_print_indent(depth, options);
-            putchar('}');
         }
-        break;
-
-    default:
-        break;
     }
 }
 
-static void *memfunc(void *user_data, void *ptr, size_t size)
+struct cli_allocation_header
 {
+    size_t size;
+};
+
+static void *cli_mem_allocator(void *user_data, void *ptr, size_t size)
+{
+    (void)user_data;
+
     if (ptr == NULL)
     {
-        return malloc(size);
+        const size_t total_size = sizeof(struct cli_allocation_header) + size;
+#if defined(_WIN32)
+        struct cli_allocation_header *header = VirtualAlloc(NULL, total_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        if (header == NULL)
+        {
+            return NULL;
+        }
+#else
+        struct cli_allocation_header *header = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (header == MAP_FAILED)
+        {
+            return NULL;
+        }
+#endif
+        header->size = total_size;
+        return &header[1];
     }
-    else
+
     {
-        free(ptr);
+        struct cli_allocation_header *header = &((struct cli_allocation_header *)ptr)[-1];
+        (void)size;
+#if defined(_WIN32)
+        (void)VirtualFree(header, 0, MEM_RELEASE);
+#else
+        (void)munmap(header, header->size);
+#endif
         return NULL;
     }
 }
@@ -293,7 +456,7 @@ static void judo_main(const struct program_options *options)
 
     struct judo_error error = {0};
     struct judo_value *root;
-    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, memfunc);
+    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, cli_mem_allocator);
     if (result != JUDO_RESULT_SUCCESS)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
@@ -323,7 +486,7 @@ static void judo_main(const struct program_options *options)
     }
 
     free(dynbuf);
-    judo_free(root, NULL, memfunc);
+    judo_free(root, NULL, cli_mem_allocator);
 }
 
 int main(int argc, char *argv[])
