@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -75,11 +76,17 @@ static size_t mapping_size(size_t size)
  */
 static uint8_t mapping_failed(const void *mapping)
 {
-    uintptr_t representation = 0U;
+    union
+    {
+        const void *pointer;
+        unsigned char bytes[sizeof(void *)];
+    } representation = { NULL };
+    unsigned char failed_pattern[sizeof(representation.bytes)] = { 0U };
     uint8_t failed = 0U;
 
-    (void)memcpy(&representation, &mapping, sizeof(mapping));
-    if (representation == UINTPTR_MAX)
+    representation.pointer = mapping;
+    (void)memset(failed_pattern, UCHAR_MAX, sizeof(failed_pattern));
+    if (memcmp(representation.bytes, failed_pattern, sizeof(representation.bytes)) == 0)
     {
         failed = 1U;
     }
@@ -103,10 +110,16 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     {
         if (ptr == NULL)
         {
-            const void * const mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (mapping_failed(mapping) == 0U)
+            union
             {
-                (void)memcpy(&result, &mapping, sizeof(mapping));
+                const void *mapping;
+                void *result;
+            } mapped = { NULL };
+
+            mapped.mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
+            if (mapping_failed(mapped.mapping) == 0U)
+            {
+                result = mapped.result;
             }
         }
         else
