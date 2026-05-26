@@ -7,3 +7,7 @@ deviations:
   query-id: "c/misra/std-lib-dynamic-memory-allocation-used"
   justification: "This program does not attempt to be MISRA C compliant."
   path: "src/judo_stdin.c"
+- rule-id: "RULE-17-7"
+  query-id: "c/misra/value-returned-by-a-function-not-used"
+  justification: "This program does not attempt to be MISRA C compliant."
+  path: "src/judo_main.c"
