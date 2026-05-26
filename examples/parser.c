@@ -80,8 +80,8 @@ static uint8_t mapping_failed(const void *mapping)
     {
         const void *pointer;
         unsigned char bytes[sizeof(void *)];
-    } representation = { NULL };
-    unsigned char failed_pattern[sizeof(representation.bytes)] = { 0U };
+    } representation;
+    unsigned char failed_pattern[sizeof(representation.bytes)];
     uint8_t failed = 0U;
 
     representation.pointer = mapping;
@@ -114,7 +114,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
             {
                 const void *mapping;
                 void *result;
-            } mapped = { NULL };
+            } mapped;
 
             mapped.mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
             if (mapping_failed(mapped.mapping) == 0U)
