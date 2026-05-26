@@ -64,7 +64,6 @@ jobs:
         python-version: '3.11' 
     - name: Install Packages
       run: |
-        vcpkg install
         pip install -r .github/scripts/requirements.txt
 
     # Add any setup steps before running the `github/codeql-action/init` action.
