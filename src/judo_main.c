@@ -24,6 +24,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 char *judo_readstdin(size_t *size);
 
@@ -283,19 +284,53 @@ static void *judo_main_memfunc(void *user_data, void *ptr, size_t size)
     }
 }
 
-static void judo_main(const struct program_options *options)
+static void write_error_stderr(const char *message)
 {
+    const size_t message_length = strlen(message);
+    size_t written = 0;
+    while (written < message_length)
+    {
+        const ssize_t rc = write(STDERR_FILENO, message + written, message_length - written);
+        if (rc < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+
+            break;
+        }
+        if (rc == 0)
+        {
+            break;
+        }
+
+        written += (size_t)rc;
+    }
+}
+
+static int32_t judo_main(const struct program_options *options)
+{
+    int32_t return_code = 0;
     size_t dynbuf_length = 0;
     char *dynbuf = judo_readstdin(&dynbuf_length);
+    struct judo_value *root = NULL;
+
     if (dynbuf == NULL)
     {
         fprintf(stderr, "error: failed to read stdin\n");
         exit(2);
     }
 
-    const int32_t source_length = (dynbuf_length <= (size_t)INT32_MAX) ? (int32_t)dynbuf_length : INT32_MAX;
+    if (dynbuf_length > (size_t)INT32_MAX)
+    {
+        write_error_stderr("error: input exceeds supported length\n");
+        return_code = 2;
+        goto cleanup;
+    }
+
+    const int32_t source_length = (int32_t)dynbuf_length;
     struct judo_error error = {0};
-    struct judo_value *root;
     const enum judo_result result = judo_parse(dynbuf, source_length, &root, &error, NULL, &judo_main_memfunc);
     if (result != JUDO_RESULT_SUCCESS)
     {
@@ -325,8 +360,13 @@ static void judo_main(const struct program_options *options)
         }
     }
 
+cleanup:
     free(dynbuf);
-    (void)judo_free(root, NULL, &judo_main_memfunc);
+    if (root != NULL)
+    {
+        (void)judo_free(root, NULL, &judo_main_memfunc);
+    }
+    return return_code;
 }
 
 int main(int argc, char *argv[])
@@ -486,6 +526,5 @@ int main(int argc, char *argv[])
         exit(3);
     }
 
-    judo_main(&options);
-    return 0;
+    return judo_main(&options);
 }
