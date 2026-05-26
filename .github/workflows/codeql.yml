@@ -68,6 +68,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
       with:
+        debug: true
         tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.21.4/codeql-bundle-linux64.tar.gz
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
