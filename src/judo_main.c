@@ -98,7 +98,7 @@ static void judo_write_ulong(int fd, unsigned long value)
         const unsigned long digit = remaining % 10UL;
         digits[length] = decimal_digits[(size_t)digit];
         remaining /= 10UL;
-        length += 1U;
+        length++;
     } while (remaining != 0UL);
 
     while (length > 0U)
