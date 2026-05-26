@@ -35,47 +35,28 @@
 #endif
 
 char *judo_readstdin(size_t *size);
-
-static int judo_write_all(int fd, const char *buffer, size_t length)
-{
-    while (length > 0u)
-    {
-#if defined(_WIN32)
-        const unsigned int chunk_length = (length > (size_t)INT_MAX) ? (unsigned int)INT_MAX : (unsigned int)length;
-        const int bytes_written = _write(fd, buffer, chunk_length);
-#else
-        const ssize_t bytes_written = write(fd, buffer, length);
-#endif
-        if (bytes_written <= 0)
-        {
-            return -1;
-        }
-
-        buffer += (size_t)bytes_written;
-        length -= (size_t)bytes_written;
-    }
-
-    return 0;
-}
+void judo_writeall(int32_t fd, const char *buffer, size_t length);
 
 static void judo_write_stdout_literal(const char *text)
 {
-    (void)judo_write_all(JUDO_STDOUT_FD, text, strlen(text));
+    judo_writeall(JUDO_STDOUT_FD, text, strlen(text));
 }
 
-static void judo_write_stdout_uint(unsigned int value)
+static void judo_write_stdout_uint32(uint32_t value)
 {
+    static const char digits[] = "0123456789";
     char buffer[sizeof("4294967295")];
     size_t index = sizeof(buffer);
+    uint32_t remaining_value = value;
 
     do
     {
         index -= 1u;
-        buffer[index] = (char)('0' + (value % 10u));
-        value /= 10u;
-    } while (value != 0u);
+        buffer[index] = digits[remaining_value % 10u];
+        remaining_value /= 10u;
+    } while (remaining_value != 0u);
 
-    (void)judo_write_all(JUDO_STDOUT_FD, &buffer[index], sizeof(buffer) - index);
+    judo_writeall(JUDO_STDOUT_FD, &buffer[index], sizeof(buffer) - index);
 }
 
 struct program_options
@@ -419,7 +400,7 @@ int main(int argc, char *argv[])
 #endif
 
             judo_write_stdout_literal("  Maximum structure depth: ");
-            judo_write_stdout_uint((unsigned int)JUDO_MAXDEPTH);
+            judo_write_stdout_uint32((uint32_t)JUDO_MAXDEPTH);
             judo_write_stdout_literal(
                 "\n"
                 "\n"

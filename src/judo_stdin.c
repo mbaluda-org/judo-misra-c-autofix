@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stdint.h>
 
 #if defined(_WIN32)
 #include <io.h>
@@ -29,26 +30,29 @@
 #define JUDO_STDERR_FD STDERR_FILENO
 #endif
 
-static int judo_write_all(int fd, const char *buffer, size_t length)
+void judo_writeall(int32_t fd, const char *buffer, size_t length)
 {
-    while (length > 0u)
+    const char *next_buffer = buffer;
+    size_t remaining = length;
+
+    while (remaining > 0u)
     {
 #if defined(_WIN32)
-        const unsigned int chunk_length = (length > (size_t)INT_MAX) ? (unsigned int)INT_MAX : (unsigned int)length;
-        const int bytes_written = _write(fd, buffer, chunk_length);
+        const uint32_t chunk_length = (remaining > (size_t)INT_MAX) ? (uint32_t)INT_MAX : (uint32_t)remaining;
+        const int32_t bytes_written = _write(fd, next_buffer, chunk_length);
 #else
-        const ssize_t bytes_written = write(fd, buffer, length);
+        const ssize_t bytes_written = write(fd, next_buffer, remaining);
 #endif
         if (bytes_written <= 0)
         {
-            return -1;
+            remaining = 0u;
         }
-
-        buffer += (size_t)bytes_written;
-        length -= (size_t)bytes_written;
+        else
+        {
+            next_buffer += (size_t)bytes_written;
+            remaining -= (size_t)bytes_written;
+        }
     }
-
-    return 0;
 }
 
 char *judo_readstdin(size_t *size)
@@ -61,7 +65,7 @@ char *judo_readstdin(size_t *size)
     {
         char buffer[4096];
 #if defined(_WIN32)
-        const int bytes_read = _read(JUDO_STDIN_FD, buffer, sizeof(buffer));
+        const int32_t bytes_read = _read(JUDO_STDIN_FD, buffer, sizeof(buffer));
 #else
         const ssize_t bytes_read = read(JUDO_STDIN_FD, buffer, sizeof(buffer));
 #endif
@@ -82,7 +86,7 @@ char *judo_readstdin(size_t *size)
         // This also ensures the buffer capacity remains under the maximum signed 32-bit integer.
         if (new_capacity >= 1024 * 1024 * 10)
         {
-            (void)judo_write_all(JUDO_STDERR_FD, "error: input too large\n", sizeof("error: input too large\n") - 1u);
+            judo_writeall(JUDO_STDERR_FD, "error: input too large\n", sizeof("error: input too large\n") - 1u);
             free(dynbuf);
             return NULL;
         }
