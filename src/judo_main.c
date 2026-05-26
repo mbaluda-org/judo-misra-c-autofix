@@ -270,21 +270,15 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
 
 static void *judo_main_memfunc(void *user_data, void *ptr, size_t size)
 {
-    void *ret;
-    const void *const userdata_immutable = user_data;
-    (void)userdata_immutable;
+    (void)user_data;
 
     if (ptr == NULL)
     {
-        ret = malloc(size);
-    }
-    else
-    {
-        free(ptr);
-        ret = NULL;
+        return malloc(size);
     }
 
-    return ret;
+    free(ptr);
+    return NULL;
 }
 
 static void judo_main(const struct program_options *options)
