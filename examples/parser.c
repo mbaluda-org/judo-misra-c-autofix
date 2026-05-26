@@ -77,7 +77,9 @@ void *memfunc(void *user_data, void *ptr, size_t size)
     }
     else
     {
-        struct mapped_allocation *allocation = ((struct mapped_allocation *)ptr) - 1;
+        struct mapped_allocation *allocation;
+
+        allocation = ((struct mapped_allocation *)ptr) - 1;
         (void)size;
         (void)munmap(allocation, allocation->mapping_size);
         return NULL;
