@@ -23,6 +23,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #if defined(_WIN32)
 #include <io.h>
 #else
@@ -37,12 +38,12 @@ typedef int32_t judo_fd_t;
 typedef int32_t judo_write_result_t;
 #define JUDO_WRITE _write
 #else
-#if SIZE_MAX == UINT64_MAX
+#if SSIZE_MAX == INT64_MAX
 typedef int64_t judo_write_result_t;
-#elif SIZE_MAX == UINT32_MAX
+#elif SSIZE_MAX == INT32_MAX
 typedef int32_t judo_write_result_t;
 #else
-#error Unsupported size_t width
+#error Unsupported ssize_t width
 #endif
 #define JUDO_WRITE write
 #endif
