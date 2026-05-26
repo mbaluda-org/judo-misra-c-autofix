@@ -42,7 +42,6 @@ static void judo_write_stdout_literal(const char *text)
 
 static void judo_write_stdout_uint32(uint32_t value)
 {
-    static const char digits[] = "0123456789";
     char buffer[sizeof("4294967295")];
     size_t index = sizeof(buffer);
     uint32_t remaining_value = value;
@@ -50,7 +49,7 @@ static void judo_write_stdout_uint32(uint32_t value)
     do
     {
         index -= 1u;
-        buffer[index] = digits[remaining_value % 10u];
+        buffer[index] = "0123456789"[remaining_value % 10u];
         remaining_value /= 10u;
     } while (remaining_value != 0u);
 
