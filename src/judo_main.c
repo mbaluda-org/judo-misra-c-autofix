@@ -63,16 +63,18 @@ static void judo_write_all(judo_fd_t fd, const char *buffer, size_t length)
 {
     if (length > 0U)
     {
-        size_t bytes_written = 0U;
+        const char *write_cursor = buffer;
+        size_t remaining = length;
 
-        while (bytes_written < length)
+        while (remaining > 0U)
         {
-            const judo_write_result_t result = JUDO_WRITE(fd, &buffer[bytes_written], length - bytes_written);
+            const judo_write_result_t result = JUDO_WRITE(fd, write_cursor, remaining);
             if (result <= 0)
             {
                 break;
             }
-            bytes_written += (size_t)result;
+            write_cursor = &write_cursor[(size_t)result];
+            remaining -= (size_t)result;
         }
     }
 }
