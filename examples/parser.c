@@ -26,6 +26,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#define DEFAULT_PAGE_SIZE 4096U
+
 char *judo_readstdin(size_t *size);
 
 struct mapped_allocation
@@ -38,7 +40,7 @@ static size_t page_size(void)
     const long size = sysconf(_SC_PAGESIZE);
     if (size <= 0)
     {
-        return 4096U;
+        return DEFAULT_PAGE_SIZE;
     }
     return (size_t)size;
 }
@@ -53,6 +55,7 @@ void *memfunc(void *user_data, void *ptr, size_t size)
         const size_t header_size = sizeof(struct mapped_allocation);
         const size_t page_bytes = page_size();
         struct mapped_allocation *allocation;
+        size_t padding;
         size_t total_size;
         size_t mapping_size;
 
@@ -61,11 +64,20 @@ void *memfunc(void *user_data, void *ptr, size_t size)
             return NULL;
         }
         total_size = header_size + size;
-        if (total_size > (SIZE_MAX - (page_bytes - 1U)))
+        padding = total_size % page_bytes;
+        if (padding != 0U)
         {
-            return NULL;
+            padding = page_bytes - padding;
+            if (total_size > (SIZE_MAX - padding))
+            {
+                return NULL;
+            }
         }
-        mapping_size = ((total_size + page_bytes - 1U) / page_bytes) * page_bytes;
+        else
+        {
+            padding = 0U;
+        }
+        mapping_size = total_size + padding;
         allocation = mmap(NULL, mapping_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
         if (allocation == MAP_FAILED)
