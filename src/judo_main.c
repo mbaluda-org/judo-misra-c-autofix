@@ -92,7 +92,7 @@ static int32_t decode_utf8(const char *string, uint32_t *scalar)
 // requires implementing the Unicode grapheme cluster break algorithm.
 // An implementation of this algorithm is available in the Unicorn library
 // available here: <https://railgunlabs.com/unicorn/>.
-static void compulate_source_location(const char *input, int32_t input_length, int32_t location, int32_t *line, int32_t *column)
+static void compute_source_location(const char *input, int32_t input_length, int32_t location, int32_t *line, int32_t *column)
 {
     *line = 1;
     *column = 1;
@@ -304,7 +304,7 @@ static void judo_main(const struct program_options *options)
         }
 
         int32_t line, column;
-        compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
+        compute_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
         fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
         free(dynbuf);
         exit(1);

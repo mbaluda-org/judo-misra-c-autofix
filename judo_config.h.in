@@ -48,16 +48,16 @@
 #define JUDO_FLOAT_LONGDOUBLE
 #endif
 
-typedef float float32_t;
-typedef double float64_t;
-typedef long double float128_t;
+typedef float judo_float32_base_t;
+typedef double judo_float64_base_t;
+typedef long double judo_longdouble_base_t;
 
 #if defined(JUDO_FLOAT_FLOAT)
-typedef float32_t judo_number;
+typedef judo_float32_base_t judo_number;
 #elif defined(JUDO_FLOAT_DOUBLE)
-typedef float64_t judo_number;
+typedef judo_float64_base_t judo_number;
 #elif defined(JUDO_FLOAT_LONGDOUBLE)
-typedef float128_t judo_number;
+typedef judo_longdouble_base_t judo_number;
 #endif
 
 #if defined(JUDO_FLOAT_FLOAT) || defined(JUDO_FLOAT_DOUBLE) || defined(JUDO_FLOAT_LONGDOUBLE)
