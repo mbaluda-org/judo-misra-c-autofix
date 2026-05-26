@@ -217,7 +217,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
         }
         else
         {
-            puts("[");
+            (void) puts("[");
             for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
             {
                 pretty_print_indent(depth + 1, options);
@@ -241,7 +241,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
         }
         else
         {
-            puts("{");
+            (void) puts("{");
             for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
             {
                 pretty_print_indent(depth + 1, options);
@@ -341,69 +341,69 @@ int main(int argc, char *argv[])
         if (strcmp(arg, "-h") == 0 ||
             strcmp(arg, "--help") == 0)
         {
-            puts("Usage: judo [options...]");
-            puts("");
-            puts("Judo is a command-line interface to the C library of the same name.");
-            puts("This program reads JSON from stdin and writes it back to stdout.");
-            puts("Errors are written to stderr. Column indices are reported relative");
-            puts("to the code point (not the code unit or grapheme cluster).");
-            puts("");
+            (void) puts("Usage: judo [options...]");
+            (void) puts("");
+            (void) puts("Judo is a command-line interface to the C library of the same name.");
+            (void) puts("This program reads JSON from stdin and writes it back to stdout.");
+            (void) puts("Errors are written to stderr. Column indices are reported relative");
+            (void) puts("to the code point (not the code unit or grapheme cluster).");
+            (void) puts("");
 
-            puts("Judo is configured at compile-time. This version of Judo was built");
-            puts("with the following options:");
+            (void) puts("Judo is configured at compile-time. This version of Judo was built");
+            (void) puts("with the following options:");
 
 #if defined(JUDO_RFC4627)
-            puts("  JSON standard: RFC 4627");
+            (void) puts("  JSON standard: RFC 4627");
 #elif defined(JUDO_RFC8259)
-            puts("  JSON standard: RFC 8259");
+            (void) puts("  JSON standard: RFC 8259");
 #elif defined(JUDO_JSON5)
-            puts("  JSON standard: JSON5");
+            (void) puts("  JSON standard: JSON5");
 #endif
 
-            puts("  JSON extension(s): ");
+            (void) puts("  JSON extension(s): ");
 #if defined(JUDO_WITH_COMMENTS)
-            puts("    comments");
+            (void) puts("    comments");
 #elif defined(JUDO_WITH_TRAILING_COMMAS)
-            puts("    trailing commas");
+            (void) puts("    trailing commas");
 #endif
 
             printf("  Maximum structure depth: %d\n", JUDO_MAXDEPTH);
 
-            puts("");
-            puts("Options:");
-            puts("  -q, --quite         Validate the input, but do not print to stdout.");
+            (void) puts("");
+            (void) puts("Options:");
+            (void) puts("  -q, --quite         Validate the input, but do not print to stdout.");
             (void) puts("                      Check the exit status for success or errors.");
-            puts("");
-            puts("  -p, --pretty        Print the JSON in a visually appealing way.");
-            puts("");
-            puts("  -i N, --indent=N    Set the indention width to N spaces when pretty");
-            puts("                      printing with spaces (default is 4).");
-            puts("  -t, --tabs          Indent with tabs instead of spaces when pretty");
-            puts("                      printing.");
-            puts("");
-            puts("  -v, --version       Prints the Judo library version and exits.");
-            puts("  -h, --help          Prints this help message and exits.");
-            puts("");
-            puts("Exit status:");
-            puts("  0  if OK,");
-            puts("  1  if the JSON input is malformed,");
-            puts("  2  if an error occurred while processing the JSON input,");
-            puts("  3  if an invalid command-line option is specified.");
-            puts("");
-            puts("Judo website and online documentation: <https://railgunlabs.com/judo/>");
-            puts("Judo repository: <https://github.com/railgunlabs/judo/>");
-            puts("");
-            puts("Judo is Free Software distributed under the GNU General Public License");
-            puts("version 3 as published by the Free Software Foundation. You may also");
-            puts("license Judo under a commercial license, as set out at");
-            puts("<https://railgunlabs.com/judo/license/>.");
+            (void) puts("");
+            (void) puts("  -p, --pretty        Print the JSON in a visually appealing way.");
+            (void) puts("");
+            (void) puts("  -i N, --indent=N    Set the indention width to N spaces when pretty");
+            (void) puts("                      printing with spaces (default is 4).");
+            (void) puts("  -t, --tabs          Indent with tabs instead of spaces when pretty");
+            (void) puts("                      printing.");
+            (void) puts("");
+            (void) puts("  -v, --version       Prints the Judo library version and exits.");
+            (void) puts("  -h, --help          Prints this help message and exits.");
+            (void) puts("");
+            (void) puts("Exit status:");
+            (void) puts("  0  if OK,");
+            (void) puts("  1  if the JSON input is malformed,");
+            (void) puts("  2  if an error occurred while processing the JSON input,");
+            (void) puts("  3  if an invalid command-line option is specified.");
+            (void) puts("");
+            (void) puts("Judo website and online documentation: <https://railgunlabs.com/judo/>");
+            (void) puts("Judo repository: <https://github.com/railgunlabs/judo/>");
+            (void) puts("");
+            (void) puts("Judo is Free Software distributed under the GNU General Public License");
+            (void) puts("version 3 as published by the Free Software Foundation. You may also");
+            (void) puts("license Judo under a commercial license, as set out at");
+            (void) puts("<https://railgunlabs.com/judo/license/>.");
             exit(0);
         }
 
         if (strcmp(arg, "-v") == 0 ||
             strcmp(arg, "--version") == 0)
         {
-            puts("1.1.0");
+            (void) puts("1.1.0");
             exit(0);
         }
 
