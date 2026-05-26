@@ -276,9 +276,11 @@ static void *judo_main_memfunc(void *user_data, void *ptr, size_t size)
     {
         return malloc(size);
     }
-
-    free(ptr);
-    return NULL;
+    else
+    {
+        free(ptr);
+        return NULL;
+    }
 }
 
 static void judo_main(const struct program_options *options)
@@ -291,14 +293,7 @@ static void judo_main(const struct program_options *options)
         exit(2);
     }
 
-    if (dynbuf_length > (size_t)INT32_MAX)
-    {
-        fprintf(stderr, "error: input exceeds supported length\n");
-        free(dynbuf);
-        exit(2);
-    }
-
-    const int32_t source_length = (int32_t)dynbuf_length;
+    const int32_t source_length = (dynbuf_length <= (size_t)INT32_MAX) ? (int32_t)dynbuf_length : INT32_MAX;
     struct judo_error error = {0};
     struct judo_value *root;
     const enum judo_result result = judo_parse(dynbuf, source_length, &root, &error, NULL, &judo_main_memfunc);
