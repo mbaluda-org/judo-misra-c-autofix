@@ -120,7 +120,6 @@ int main(int argc, char *argv[])
     struct judo_value *root;
     if (json_len > (size_t)INT32_MAX)
     {
-        fprintf(stderr, "error: input is too large\n");
         return 2;
     }
     const int32_t length = (int32_t)json_len;
