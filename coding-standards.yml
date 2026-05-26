@@ -1,25 +1,6 @@
 deviations:
-  - rule-id: "RULE-17-7"
-    justification: "CLI help/version output intentionally ignores libc I/O return values and this file is outside the MISRA-conformant library scope."
+  - justification: "This program does not attempt to be MISRA C compliant."
     scope: "CLI-only user-facing output paths in judo_main."
-    raised-by:
-      name: "@copilot"
-      date: "2026-05-26"
-    paths:
-      - "src/judo_main.c"
-  - rule-id: "RULE-21-6"
-    query-id: "c/misra/standard-library-inputoutput-functions-used"
-    justification: "This file implements the CLI tool, where formatted console I/O is intentional and outside the MISRA-conformant library scope."
-    scope: "CLI-only output behavior."
-    raised-by:
-      name: "@copilot"
-      date: "2026-05-26"
-    paths:
-      - "src/judo_main.c"
-  - rule-id: "RULE-14-2"
-    query-id: "c/misra/for-loop-not-well-formed"
-    justification: "This file implements the CLI tool and is explicitly documented as outside the MISRA-conformant library scope."
-    scope: "CLI-only option parsing behavior."
     raised-by:
       name: "@copilot"
       date: "2026-05-26"
