@@ -20,7 +20,6 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
-#include <errno.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -72,6 +71,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     const int prot = (int)((unsigned int)PROT_READ | (unsigned int)PROT_WRITE);
     const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
     const void * const context = user_data;
+    void *mapping = NULL;
     void *result = NULL;
     size_t rounded_size = 0U;
 
@@ -82,11 +82,10 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     {
         if (ptr == NULL)
         {
-            errno = 0;
-            result = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (errno != 0)
+            mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
+            if (mapping != MAP_FAILED)
             {
-                result = NULL;
+                result = mapping;
             }
         }
         else
