@@ -55,45 +55,45 @@ void print_tree(const char *source, struct judo_value *value)
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         span = judo_value2span(value);
-        printf("%.*s", span.length, &source[span.offset]);
+        (void)printf("%.*s", span.length, &source[span.offset]);
         break;
     // [cont...]
 //! [parser_process_traverse]
 
 //! [parser_process_array]
     case JUDO_TYPE_ARRAY:
-        putchar('[');
+        (void)putchar('[');
         elem = judo_first(value);
         while (elem != NULL)
         {
             print_tree(source, elem);
             if (judo_next(elem) != NULL)
             {
-                putchar(',');
+                (void)putchar(',');
             }
             elem = judo_next(elem);
         }
-        putchar(']');
+        (void)putchar(']');
         break;
     // [cont...]
 //! [parser_process_array]
 
 //! [parser_process_object]
     case JUDO_TYPE_OBJECT:
-        putchar('{');
+        (void)putchar('{');
         member = judo_membfirst(value);
         while (member != NULL)
         {
             span = judo_name2span(member);
-            printf("%.*s:", span.length, &source[span.offset]);
+            (void)printf("%.*s:", span.length, &source[span.offset]);
             print_tree(source, judo_membvalue(member));
             if (judo_membnext(member) != NULL)
             {
-                putchar(',');
+                (void)putchar(',');
             }
             member = judo_membnext(member);
         }
-        putchar('}');
+        (void)putchar('}');
         break;
 //! [parser_process_object]
 
