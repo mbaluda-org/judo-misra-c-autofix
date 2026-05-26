@@ -67,6 +67,10 @@ static size_t mapping_size(size_t size)
     return rounded_size;
 }
 
+/*
+ * MAP_FAILED is defined by this platform as (void *)-1. Check that sentinel
+ * via the pointer object representation to avoid a direct pointer/integer cast.
+ */
 static int mapping_failed(const void *mapping)
 {
     unsigned char representation[sizeof(mapping)];
@@ -79,6 +83,7 @@ static int mapping_failed(const void *mapping)
         if (representation[index] != UCHAR_MAX)
         {
             failed = 0;
+            break;
         }
         index++;
     }
