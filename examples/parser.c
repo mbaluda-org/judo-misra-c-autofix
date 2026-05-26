@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <limits.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -68,24 +67,19 @@ static size_t mapping_size(size_t size)
 }
 
 /*
- * MAP_FAILED is defined by this platform as (void *)-1. Check that sentinel
- * via the pointer object representation to avoid a direct pointer/integer cast.
+ * MAP_FAILED is defined by this platform as (void *)-1, and uintptr_t has the
+ * same width as a data pointer on this platform. Copy the pointer object
+ * representation to check for the all-bits-one sentinel without a direct cast.
  */
 static uint8_t mapping_failed(const void *mapping)
 {
-    unsigned char representation[sizeof(mapping)];
-    size_t index = 0U;
-    uint8_t failed = 1U;
+    uintptr_t representation = 0U;
+    uint8_t failed = 0U;
 
-    (void)memcpy(representation, &mapping, sizeof(representation));
-    while (index < sizeof(representation))
+    (void)memcpy(&representation, &mapping, sizeof(representation));
+    if (representation == UINTPTR_MAX)
     {
-        if (representation[index] != UCHAR_MAX)
-        {
-            failed = 0U;
-            break;
-        }
-        index++;
+        failed = 1U;
     }
 
     return failed;
@@ -97,7 +91,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     const int prot = (int)((unsigned int)PROT_READ | (unsigned int)PROT_WRITE);
     const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
     const void * const context = user_data;
-    void *mapping = NULL;
+    void *result = NULL;
     size_t rounded_size = 0U;
 
     (void)context;
@@ -107,10 +101,10 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     {
         if (ptr == NULL)
         {
-            mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (mapping_failed(mapping) != 0U)
+            const void * const mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
+            if (mapping_failed(mapping) == 0U)
             {
-                mapping = NULL;
+                (void)memcpy(&result, &mapping, sizeof(result));
             }
         }
         else
@@ -119,7 +113,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
         }
     }
 
-    return mapping;
+    return result;
 }
 //! [parser_process_memory]
 
