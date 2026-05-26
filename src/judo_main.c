@@ -19,11 +19,26 @@
 
 #include "judo.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#if defined(_WIN32)
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
+#define JUDO_STDOUT_FD 1
+#define JUDO_STDERR_FD 2
+
+#if defined(_WIN32)
+typedef int judo_write_result_t;
+#define JUDO_WRITE _write
+#else
+typedef ssize_t judo_write_result_t;
+#define JUDO_WRITE write
+#endif
 
 char *judo_readstdin(size_t *size);
 
@@ -35,6 +50,60 @@ struct program_options
     bool escape_unicode;
     int indention_width;
 };
+
+static void judo_write_all(int fd, const char *buffer, size_t length)
+{
+    size_t bytes_written = 0;
+    while (bytes_written < length)
+    {
+        const judo_write_result_t result = JUDO_WRITE(fd, &buffer[bytes_written], length - bytes_written);
+        if (result <= 0)
+        {
+            break;
+        }
+        bytes_written += (size_t)result;
+    }
+}
+
+static void judo_write_char(int fd, char ch)
+{
+    judo_write_all(fd, &ch, 1);
+}
+
+static void judo_write_cstr(int fd, const char *string)
+{
+    judo_write_all(fd, string, strlen(string));
+}
+
+static void judo_write_line(int fd, const char *string)
+{
+    judo_write_cstr(fd, string);
+    judo_write_char(fd, '\n');
+}
+
+static void judo_write_span(int fd, const char *source, struct judo_span where)
+{
+    judo_write_all(fd, &source[where.offset], (size_t)where.length);
+}
+
+static void judo_write_ulong(int fd, unsigned long value)
+{
+    char digits[32];
+    size_t length = 0;
+
+    do
+    {
+        digits[length] = (char)('0' + (value % 10UL));
+        value /= 10UL;
+        length += 1;
+    } while (value != 0UL);
+
+    while (length > 0U)
+    {
+        length -= 1U;
+        judo_write_char(fd, digits[length]);
+    }
+}
 
 static int32_t decode_utf8(const char *string, uint32_t *scalar)
 {
@@ -141,35 +210,36 @@ static void print_tree(struct judo_value *value, const char *source, const struc
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         where = judo_value2span(value);
-        printf("%.*s", where.length, &source[where.offset]);
+        judo_write_span(JUDO_STDOUT_FD, source, where);
         break;
 
     case JUDO_TYPE_ARRAY:
-        putchar('[');
+        judo_write_char(JUDO_STDOUT_FD, '[');
         for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
         {
             print_tree(elem, source, options);
             if (judo_next(elem) != NULL)
             {
-                putchar(',');
+                judo_write_char(JUDO_STDOUT_FD, ',');
             }
         }
-        putchar(']');
+        judo_write_char(JUDO_STDOUT_FD, ']');
         break;
 
     case JUDO_TYPE_OBJECT:
-        putchar('{');
+        judo_write_char(JUDO_STDOUT_FD, '{');
         for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
         {
             where = judo_name2span(member);
-            printf("%.*s:", where.length, &source[where.offset]);
+            judo_write_span(JUDO_STDOUT_FD, source, where);
+            judo_write_char(JUDO_STDOUT_FD, ':');
             print_tree(judo_membvalue(member), source, options);
             if (judo_membnext(member) != NULL)
             {
-                putchar(',');
+                judo_write_char(JUDO_STDOUT_FD, ',');
             }
         }
-        putchar('}');
+        judo_write_char(JUDO_STDOUT_FD, '}');
         break;
 
     default:
@@ -187,12 +257,16 @@ static void pretty_print_indent(int depth, const struct program_options *options
         {
             for (int i = 0; i < depth; i++)
             {
-                putchar('\t');
+                judo_write_char(JUDO_STDOUT_FD, '\t');
             }
         }
         else
         {
-            printf("%*c", depth * options->indention_width, ' ');
+            const int width = depth * options->indention_width;
+            for (int i = 0; i < width; i++)
+            {
+                judo_write_char(JUDO_STDOUT_FD, ' ');
+            }
         }
     }
 }
@@ -207,17 +281,17 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         where = judo_value2span(value);
-        printf("%.*s", where.length, &source[where.offset]);
+        judo_write_span(JUDO_STDOUT_FD, source, where);
         break;
 
     case JUDO_TYPE_ARRAY:
         if (judo_len(value) == 0)
         {
-            printf("[]");
+            judo_write_cstr(JUDO_STDOUT_FD, "[]");
         }
         else
         {
-            puts("[");
+            judo_write_line(JUDO_STDOUT_FD, "[");
             for (struct judo_value *elem = judo_first(value); elem != NULL; elem = judo_next(elem))
             {
                 pretty_print_indent(depth + 1, options);
@@ -225,41 +299,42 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
 
                 if (judo_next(elem) != NULL)
                 {
-                    putchar(',');
+                    judo_write_char(JUDO_STDOUT_FD, ',');
                 }
-                putchar('\n');
+                judo_write_char(JUDO_STDOUT_FD, '\n');
             }
             pretty_print_indent(depth, options);
-            putchar(']');
+            judo_write_char(JUDO_STDOUT_FD, ']');
         }
         break;
 
     case JUDO_TYPE_OBJECT:
         if (judo_len(value) ==0)
         {
-            printf("{}");
+            judo_write_cstr(JUDO_STDOUT_FD, "{}");
         }
         else
         {
-            puts("{");
+            judo_write_line(JUDO_STDOUT_FD, "{");
             for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
             {
                 pretty_print_indent(depth + 1, options);
 
                 where = judo_name2span(member);
-                printf("%.*s: ", where.length, &source[where.offset]);
+                judo_write_span(JUDO_STDOUT_FD, source, where);
+                judo_write_cstr(JUDO_STDOUT_FD, ": ");
 
                 pretty_print_tree(judo_membvalue(member), source, depth + 1, options);
 
                 if (judo_membnext(member) != NULL)
                 {
-                    putchar(',');
+                    judo_write_char(JUDO_STDOUT_FD, ',');
                 }
-                putchar('\n');
+                judo_write_char(JUDO_STDOUT_FD, '\n');
             }
 
             pretty_print_indent(depth, options);
-            putchar('}');
+            judo_write_char(JUDO_STDOUT_FD, '}');
         }
         break;
 
@@ -287,7 +362,7 @@ static void judo_main(const struct program_options *options)
     char *dynbuf = judo_readstdin(&dynbuf_length);
     if (dynbuf == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
+        judo_write_cstr(JUDO_STDERR_FD, "error: failed to read stdin\n");
         exit(2);
     }
 
@@ -298,14 +373,20 @@ static void judo_main(const struct program_options *options)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
         {
-            fprintf(stderr, "error: memory allocation failed\n");
+            judo_write_cstr(JUDO_STDERR_FD, "error: memory allocation failed\n");
             free(dynbuf);
             exit(2);
         }
 
         int line, column;
         compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
-        fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
+        judo_write_cstr(JUDO_STDERR_FD, "stdin:");
+        judo_write_ulong(JUDO_STDERR_FD, (unsigned long)line);
+        judo_write_char(JUDO_STDERR_FD, ':');
+        judo_write_ulong(JUDO_STDERR_FD, (unsigned long)column);
+        judo_write_cstr(JUDO_STDERR_FD, ": error: ");
+        judo_write_cstr(JUDO_STDERR_FD, error.description);
+        judo_write_char(JUDO_STDERR_FD, '\n');
         free(dynbuf);
         exit(1);
     }
@@ -341,73 +422,76 @@ int main(int argc, char *argv[])
         if (strcmp(arg, "-h") == 0 ||
             strcmp(arg, "--help") == 0)
         {
-            puts("Usage: judo [options...]");
-            puts("");
-            puts("Judo is a command-line interface to the C library of the same name.");
-            puts("This program reads JSON from stdin and writes it back to stdout.");
-            puts("Errors are written to stderr. Column indices are reported relative");
-            puts("to the code point (not the code unit or grapheme cluster).");
-            puts("");
+            judo_write_line(JUDO_STDOUT_FD, "Usage: judo [options...]");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "Judo is a command-line interface to the C library of the same name.");
+            judo_write_line(JUDO_STDOUT_FD, "This program reads JSON from stdin and writes it back to stdout.");
+            judo_write_line(JUDO_STDOUT_FD, "Errors are written to stderr. Column indices are reported relative");
+            judo_write_line(JUDO_STDOUT_FD, "to the code point (not the code unit or grapheme cluster).");
+            judo_write_line(JUDO_STDOUT_FD, "");
 
-            puts("Judo is configured at compile-time. This version of Judo was built");
-            puts("with the following options:");
+            judo_write_line(JUDO_STDOUT_FD, "Judo is configured at compile-time. This version of Judo was built");
+            judo_write_line(JUDO_STDOUT_FD, "with the following options:");
 
 #if defined(JUDO_RFC4627)
-            puts("  JSON standard: RFC 4627");
+            judo_write_line(JUDO_STDOUT_FD, "  JSON standard: RFC 4627");
 #elif defined(JUDO_RFC8259)
-            puts("  JSON standard: RFC 8259");
+            judo_write_line(JUDO_STDOUT_FD, "  JSON standard: RFC 8259");
 #elif defined(JUDO_JSON5)
-            puts("  JSON standard: JSON5");
+            judo_write_line(JUDO_STDOUT_FD, "  JSON standard: JSON5");
 #endif
 
-            puts("  JSON extension(s): ");
+            judo_write_line(JUDO_STDOUT_FD, "  JSON extension(s): ");
 #if defined(JUDO_WITH_COMMENTS)
-            puts("    comments");
+            judo_write_line(JUDO_STDOUT_FD, "    comments");
 #elif defined(JUDO_WITH_TRAILING_COMMAS)
-            puts("    trailing commas");
+            judo_write_line(JUDO_STDOUT_FD, "    trailing commas");
 #endif
 
-            printf("  Maximum structure depth: %d\n", JUDO_MAXDEPTH);
+            judo_write_cstr(JUDO_STDOUT_FD, "  Maximum structure depth: ");
+            judo_write_ulong(JUDO_STDOUT_FD, (unsigned long)JUDO_MAXDEPTH);
+            judo_write_char(JUDO_STDOUT_FD, '\n');
 
-            puts("");
-            puts("Options:");
-            puts("  -q, --quite         Validate the input, but do not print to stdout.");
-            puts("                      Check the exit status for success or errors.");
-            puts("");
-            puts("  -p, --pretty        Print the JSON in a visually appealing way.");
-            puts("");
-            puts("  -i N, --indent=N    Set the indention width to N spaces when pretty");
-            puts("                      printing with spaces (default is 4).");
-            puts("  -t, --tabs          Indent with tabs instead of spaces when pretty");
-            puts("                      printing.");
-            puts("");
-            puts("  -v, --version       Prints the Judo library version and exits.");
-            puts("  -h, --help          Prints this help message and exits.");
-            puts("");
-            puts("Exit status:");
-            puts("  0  if OK,");
-            puts("  1  if the JSON input is malformed,");
-            puts("  2  if an error occurred while processing the JSON input,");
-            puts("  3  if an invalid command-line option is specified.");
-            puts("");
-            puts("Judo website and online documentation: <https://railgunlabs.com/judo/>");
-            puts("Judo repository: <https://github.com/railgunlabs/judo/>");
-            puts("");
-            puts("Judo is Free Software distributed under the GNU General Public License");
-            puts("version 3 as published by the Free Software Foundation. You may also");
-            puts("license Judo under a commercial license, as set out at");
-            puts("<https://railgunlabs.com/judo/license/>.");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "Options:");
+            judo_write_line(JUDO_STDOUT_FD, "  -q, --quiet         Validate the input, but do not print to stdout.");
+            judo_write_line(JUDO_STDOUT_FD, "                      Check the exit status for success or errors.");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "  -p, --pretty        Print the JSON in a visually appealing way.");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "  -i N, --indent=N    Set the indention width to N spaces when pretty");
+            judo_write_line(JUDO_STDOUT_FD, "                      printing with spaces (default is 4).");
+            judo_write_line(JUDO_STDOUT_FD, "  -t, --tabs          Indent with tabs instead of spaces when pretty");
+            judo_write_line(JUDO_STDOUT_FD, "                      printing.");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "  -v, --version       Prints the Judo library version and exits.");
+            judo_write_line(JUDO_STDOUT_FD, "  -h, --help          Prints this help message and exits.");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "Exit status:");
+            judo_write_line(JUDO_STDOUT_FD, "  0  if OK,");
+            judo_write_line(JUDO_STDOUT_FD, "  1  if the JSON input is malformed,");
+            judo_write_line(JUDO_STDOUT_FD, "  2  if an error occurred while processing the JSON input,");
+            judo_write_line(JUDO_STDOUT_FD, "  3  if an invalid command-line option is specified.");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "Judo website and online documentation: <https://railgunlabs.com/judo/>");
+            judo_write_line(JUDO_STDOUT_FD, "Judo repository: <https://github.com/railgunlabs/judo/>");
+            judo_write_line(JUDO_STDOUT_FD, "");
+            judo_write_line(JUDO_STDOUT_FD, "Judo is Free Software distributed under the GNU General Public License");
+            judo_write_line(JUDO_STDOUT_FD, "version 3 as published by the Free Software Foundation. You may also");
+            judo_write_line(JUDO_STDOUT_FD, "license Judo under a commercial license, as set out at");
+            judo_write_line(JUDO_STDOUT_FD, "<https://railgunlabs.com/judo/license/>.");
             exit(0);
         }
 
         if (strcmp(arg, "-v") == 0 ||
             strcmp(arg, "--version") == 0)
         {
-            puts("1.1.0");
+            judo_write_line(JUDO_STDOUT_FD, "1.1.0");
             exit(0);
         }
 
         if (strcmp(arg, "-q") == 0 ||
+            strcmp(arg, "--quiet") == 0 ||
             strcmp(arg, "--quite") == 0)
         {
             options.suppress_output = true;
@@ -443,7 +527,7 @@ int main(int argc, char *argv[])
             {
                 if (i == argc - 1)
                 {
-                    fprintf(stderr, "error: expected indention width\n");
+                    judo_write_cstr(JUDO_STDERR_FD, "error: expected indention width\n");
                     exit(3);
                 }
                 i += 1;
@@ -453,7 +537,7 @@ int main(int argc, char *argv[])
             {
                 if (arg[8] != '=')
                 {
-                    fprintf(stderr, "error: expected indention width\n");
+                    judo_write_cstr(JUDO_STDERR_FD, "error: expected indention width\n");
                     exit(3);
                 }
                 arg += 9;
@@ -464,12 +548,12 @@ int main(int argc, char *argv[])
             const unsigned long value = strtoul(arg, &endptr, 10);
             if ((endptr == arg) || (errno != 0))
             {
-                fprintf(stderr, "error: invalid or missing indention width\n");
+                judo_write_cstr(JUDO_STDERR_FD, "error: invalid or missing indention width\n");
                 exit(3);
             }
             else if ((value >= (unsigned long)UINT16_MAX) || (value == 0UL))
             {
-                fprintf(stderr, "error: indention width is too large or small\n");
+                judo_write_cstr(JUDO_STDERR_FD, "error: indention width is too large or small\n");
                 exit(3);
             }
             else
@@ -479,7 +563,9 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        fprintf(stderr, "error: unknown option '%s'\n", arg);
+        judo_write_cstr(JUDO_STDERR_FD, "error: unknown option '");
+        judo_write_cstr(JUDO_STDERR_FD, arg);
+        judo_write_cstr(JUDO_STDERR_FD, "'\n");
         exit(3);
     }
 
