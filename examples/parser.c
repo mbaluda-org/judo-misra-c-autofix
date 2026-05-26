@@ -72,7 +72,6 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
     const void * const context = user_data;
     void *mapping = NULL;
-    void *result = NULL;
     size_t rounded_size = 0U;
 
     (void)context;
@@ -83,9 +82,9 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
         if (ptr == NULL)
         {
             mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (mapping != MAP_FAILED)
+            if (mapping == MAP_FAILED)
             {
-                result = mapping;
+                mapping = NULL;
             }
         }
         else
@@ -94,7 +93,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
         }
     }
 
-    return result;
+    return mapping;
 }
 //! [parser_process_memory]
 
