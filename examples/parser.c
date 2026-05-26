@@ -111,7 +111,10 @@ int main(int argc, char *argv[])
 //! [parser_process_stdin]
     if (json == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
+        exit_code = 2;
+    }
+    else if (json_len > (size_t)INT32_MAX)
+    {
         exit_code = 2;
     }
     else
@@ -119,23 +122,19 @@ int main(int argc, char *argv[])
 //! [parser_process_input]
         struct judo_error error = {0};
         struct judo_value *root;
-        enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, memfunc);
-        if (result == JUDO_RESULT_SUCCESS)
+        const enum judo_result parse_result = judo_parse(json, (int32_t)json_len, &root, &error, NULL, &memfunc);
+        if (parse_result == JUDO_RESULT_SUCCESS)
         {
             print_tree(json, root);
-            judo_free(root, NULL, memfunc);
-        }
-        else
-        {
-            const int print_result = fprintf(stderr, "error: %s\n", error.description);
-            if (print_result < 0)
+            const enum judo_result free_result = judo_free(root, NULL, &memfunc);
+            if (free_result != JUDO_RESULT_SUCCESS)
             {
                 exit_code = 2;
             }
-            else
-            {
-                exit_code = 1;
-            }
+        }
+        else
+        {
+            exit_code = 1;
         }
 //! [parser_process_input]
     }
