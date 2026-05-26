@@ -104,6 +104,7 @@ void print_tree(const char *source, struct judo_value *value)
 
 int main(int argc, char *argv[])
 {
+    int exit_code = 0;
 //! [parser_process_stdin]
     size_t json_len = 0;
     const char *json = judo_readstdin(&json_len);
@@ -111,24 +112,26 @@ int main(int argc, char *argv[])
     if (json == NULL)
     {
         fprintf(stderr, "error: failed to read stdin\n");
-        return 2;
-    }
-
-//! [parser_process_input]
-    struct judo_error error = {0};
-    struct judo_value *root;
-    enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, memfunc);
-    if (result == JUDO_RESULT_SUCCESS)
-    {
-        print_tree(json, root);
-        judo_free(root, NULL, memfunc);
+        exit_code = 2;
     }
     else
     {
-        fprintf(stderr, "error: %s\n", error.description);
-        return 1;
-    }
 //! [parser_process_input]
+        struct judo_error error = {0};
+        struct judo_value *root;
+        enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, memfunc);
+        if (result == JUDO_RESULT_SUCCESS)
+        {
+            print_tree(json, root);
+            judo_free(root, NULL, memfunc);
+        }
+        else
+        {
+            fprintf(stderr, "error: %s\n", error.description);
+            exit_code = 1;
+        }
+//! [parser_process_input]
+    }
 
-    return 0;
+    return exit_code;
 }
