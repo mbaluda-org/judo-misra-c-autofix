@@ -15,16 +15,41 @@
 // by the command-line interface and Judo examples. This code does not
 // attempt to be MISRA compliant.
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #if defined(_WIN32)
 #include <io.h>
-#include <fcntl.h>
+#define JUDO_STDIN_FD 0
+#define JUDO_STDERR_FD 2
 #else
 #include <unistd.h>
+#define JUDO_STDIN_FD STDIN_FILENO
+#define JUDO_STDERR_FD STDERR_FILENO
 #endif
+
+static int judo_write_all(int fd, const char *buffer, size_t length)
+{
+    while (length > 0u)
+    {
+#if defined(_WIN32)
+        const unsigned int chunk_length = (length > (size_t)INT_MAX) ? (unsigned int)INT_MAX : (unsigned int)length;
+        const int bytes_written = _write(fd, buffer, chunk_length);
+#else
+        const ssize_t bytes_written = write(fd, buffer, length);
+#endif
+        if (bytes_written <= 0)
+        {
+            return -1;
+        }
+
+        buffer += (size_t)bytes_written;
+        length -= (size_t)bytes_written;
+    }
+
+    return 0;
+}
 
 char *judo_readstdin(size_t *size)
 {
@@ -32,17 +57,13 @@ char *judo_readstdin(size_t *size)
     size_t dynbuf_length = 0;
     size_t dynbuf_capacity = 0;
 
-#if defined(_WIN32)
-    const int stdin_fd = _fileno(stdin);
-#endif
-
     for (;;)
     {
         char buffer[4096];
 #if defined(_WIN32)
-        const int bytes_read = _read(stdin_fd, buffer, sizeof(buffer));
+        const int bytes_read = _read(JUDO_STDIN_FD, buffer, sizeof(buffer));
 #else
-        const ssize_t bytes_read = read(STDIN_FILENO, buffer, sizeof(buffer));
+        const ssize_t bytes_read = read(JUDO_STDIN_FD, buffer, sizeof(buffer));
 #endif
         if (bytes_read == 0)
         {
@@ -61,7 +82,7 @@ char *judo_readstdin(size_t *size)
         // This also ensures the buffer capacity remains under the maximum signed 32-bit integer.
         if (new_capacity >= 1024 * 1024 * 10)
         {
-            fprintf(stderr, "error: input too large\n");
+            (void)judo_write_all(JUDO_STDERR_FD, "error: input too large\n", sizeof("error: input too large\n") - 1u);
             free(dynbuf);
             return NULL;
         }

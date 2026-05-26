@@ -21,6 +21,44 @@
 #include "judo.h"
 #include <stdio.h>
 #include <stddef.h>
+#include <limits.h>
+
+#if defined(_WIN32)
+#include <io.h>
+#define JUDO_STDOUT_FD 1
+#else
+#include <unistd.h>
+#define JUDO_STDOUT_FD STDOUT_FILENO
+#endif
+
+static int judo_write_all(int fd, const char *buffer, size_t length)
+{
+    while (length > 0u)
+    {
+#if defined(_WIN32)
+        const unsigned int chunk_length = (length > (size_t)INT_MAX) ? (unsigned int)INT_MAX : (unsigned int)length;
+        const int bytes_written = _write(fd, buffer, chunk_length);
+#else
+        const ssize_t bytes_written = write(fd, buffer, length);
+#endif
+        if (bytes_written <= 0)
+        {
+            return -1;
+        }
+
+        buffer += (size_t)bytes_written;
+        length -= (size_t)bytes_written;
+    }
+
+    return 0;
+}
+
+static void print_object_name(struct judo_stream stream, const char *json)
+{
+    (void)judo_write_all(JUDO_STDOUT_FD, "{name: ", sizeof("{name: ") - 1u);
+    (void)judo_write_all(JUDO_STDOUT_FD, &json[stream.where.offset], (size_t)stream.where.length);
+    (void)judo_write_all(JUDO_STDOUT_FD, "}\n", sizeof("}\n") - 1u);
+}
 
 char *judo_readstdin(size_t *size);
 
@@ -43,7 +81,7 @@ static void process_token(struct judo_stream stream, const char *json)
         printf("string: %.*s\n", stream.where.length, &json[stream.where.offset]);
         break;
     case JUDO_TOKEN_OBJECT_NAME:
-        printf("{name: %.*s}\n", stream.where.length, &json[stream.where.offset]);
+        print_object_name(stream, json);
         break;
     default:
         break;
