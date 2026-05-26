@@ -19,7 +19,7 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
-#include "../src/judo_stdin.h"
+#include "judo_stdin.h"
 #include <stdio.h>
 #include <stddef.h>
 
