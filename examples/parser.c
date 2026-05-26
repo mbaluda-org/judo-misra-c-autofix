@@ -31,6 +31,8 @@
 #define MMAP_NO_FD (-1)
 #define MMAP_NO_OFFSET 0
 
+_Static_assert(sizeof(uintptr_t) == sizeof(void *), "uintptr_t must match pointer width");
+
 char *judo_readstdin(size_t *size);
 
 static size_t page_size(void)
@@ -76,7 +78,7 @@ static uint8_t mapping_failed(const void *mapping)
     uintptr_t representation = 0U;
     uint8_t failed = 0U;
 
-    (void)memcpy(&representation, &mapping, sizeof(representation));
+    (void)memcpy(&representation, &mapping, sizeof(mapping));
     if (representation == UINTPTR_MAX)
     {
         failed = 1U;
@@ -104,7 +106,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
             const void * const mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
             if (mapping_failed(mapping) == 0U)
             {
-                (void)memcpy(&result, &mapping, sizeof(result));
+                (void)memcpy(&result, &mapping, sizeof(mapping));
             }
         }
         else
