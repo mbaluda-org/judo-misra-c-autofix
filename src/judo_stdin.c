@@ -52,11 +52,9 @@ bool judo_writeall(int32_t fd, const char *buffer, size_t length)
             success = false;
             break;
         }
-        else
-        {
-            next_buffer += (size_t)bytes_written;
-            remaining -= (size_t)bytes_written;
-        }
+
+        next_buffer += (size_t)bytes_written;
+        remaining -= (size_t)bytes_written;
     }
 
     return success;
