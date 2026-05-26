@@ -271,17 +271,20 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
 
 static void *judo_main_memfunc(void *user_data, void *ptr, size_t size)
 {
-    (void)user_data;
+    const void *const userdata_immutable = user_data;
+    (void)userdata_immutable;
 
     if (ptr == NULL)
     {
-        return malloc(size);
+        ptr = malloc(size);
     }
     else
     {
         free(ptr);
-        return NULL;
+        ptr = NULL;
     }
+
+    return ptr;
 }
 
 static void write_error_stderr(const char *message)
