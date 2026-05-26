@@ -87,18 +87,15 @@ annotation or attribute** convention, **in-source line / block comments**,
 or a **separate documentation file** (for example a `DEVIATIONS.md`,
 `MISRA-deviations.md`, compliance matrix, or similar).
 
-The fix proposal must take what is found into account and treat it as an existing deviation if it clearly covers the alert location and rule.
-
 If the alert location is covered by an existing deviation:
 
 - **Still propose a code fix** that would make the location compliant by
   default. Authors may have left the deviation in place pragmatically and
   may prefer a real fix.
 - **In the pull request description, explicitly state** that a matching
-  deviation already exists in the project, citing the file path and the
-  relevant `rule-id` / `query-id` / `permit-id` / `code-identifier` / scope
-  (paths or markers) so reviewers can decide whether to accept the fix or
-  keep the deviation.
+  deviation already exists in the project, referring to the possible deviation marker
+  so reviewers can decide whether to accept the fix or keep the deviation.
+- If the deviation style does not match the coding standards user manual, propose a fix.  
 - Do not silently delete or weaken an existing deviation, permit, or
   re-categorization entry as part of the fix.
 
