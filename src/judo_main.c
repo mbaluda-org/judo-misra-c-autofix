@@ -270,15 +270,20 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
 
 static void *judo_main_memfunc(void *user_data, void *ptr, size_t size)
 {
+    void *ret;
+    (void)user_data;
+
     if (ptr == NULL)
     {
-        return malloc(size);
+        ret = malloc(size);
     }
     else
     {
         free(ptr);
-        return NULL;
+        ret = NULL;
     }
+
+    return ret;
 }
 
 static void judo_main(const struct program_options *options)
@@ -291,9 +296,17 @@ static void judo_main(const struct program_options *options)
         exit(2);
     }
 
+    if (dynbuf_length > (size_t)INT32_MAX)
+    {
+        fprintf(stderr, "error: input exceeds supported length\n");
+        free(dynbuf);
+        exit(2);
+    }
+
+    const int32_t source_length = (int32_t)dynbuf_length;
     struct judo_error error = {0};
     struct judo_value *root;
-    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, judo_main_memfunc);
+    const enum judo_result result = judo_parse(dynbuf, source_length, &root, &error, NULL, &judo_main_memfunc);
     if (result != JUDO_RESULT_SUCCESS)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
@@ -304,7 +317,7 @@ static void judo_main(const struct program_options *options)
         }
 
         int line, column;
-        compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
+        compulate_source_location(dynbuf, source_length, error.where.offset, &line, &column);
         fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
         free(dynbuf);
         exit(1);
@@ -323,7 +336,7 @@ static void judo_main(const struct program_options *options)
     }
 
     free(dynbuf);
-    judo_free(root, NULL, judo_main_memfunc);
+    (void)judo_free(root, NULL, &judo_main_memfunc);
 }
 
 int main(int argc, char *argv[])
