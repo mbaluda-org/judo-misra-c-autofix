@@ -317,7 +317,7 @@ static void judo_main(const struct program_options *options)
         }
 
         int32_t line, column;
-        compute_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
+        compute_source_location(dynbuf, source_length, error.where.offset, &line, &column);
         fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
         free(dynbuf);
         exit(1);
