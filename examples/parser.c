@@ -20,6 +20,7 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -27,13 +28,10 @@
 #include <unistd.h>
 
 #define DEFAULT_PAGE_SIZE 4096U
+#define MMAP_NO_FD (-1)
+#define MMAP_NO_OFFSET 0
 
 char *judo_readstdin(size_t *size);
-
-struct mapped_allocation
-{
-    size_t mapping_size;
-};
 
 static size_t page_size(void)
 {
@@ -45,58 +43,58 @@ static size_t page_size(void)
     return (size_t)size;
 }
 
-//! [parser_process_memory]
-void *memfunc(void *user_data, void *ptr, size_t size)
+static size_t mapping_size(size_t size)
 {
-    (void)user_data;
+    const size_t page_bytes = page_size();
+    size_t padding = 0U;
+    size_t rounded_size = 0U;
 
-    if (ptr == NULL)
+    if (size != 0U)
     {
-        const size_t header_size = sizeof(struct mapped_allocation);
-        const size_t page_bytes = page_size();
-        struct mapped_allocation *allocation;
-        size_t padding;
-        size_t total_size;
-        size_t mapping_size;
-
-        if (size > (SIZE_MAX - header_size))
-        {
-            return NULL;
-        }
-        total_size = header_size + size;
-        padding = total_size % page_bytes;
+        padding = size % page_bytes;
         if (padding != 0U)
         {
             padding = page_bytes - padding;
-            if (total_size > (SIZE_MAX - padding))
+        }
+
+        if (size <= (SIZE_MAX - padding))
+        {
+            rounded_size = size + padding;
+        }
+    }
+
+    return rounded_size;
+}
+
+//! [parser_process_memory]
+void *memfunc(void *user_data, void *ptr, size_t size)
+{
+    const int prot = (int)((unsigned int)PROT_READ | (unsigned int)PROT_WRITE);
+    const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
+    void *result = NULL;
+    size_t rounded_size = 0U;
+
+    (void)user_data;
+    rounded_size = mapping_size(size);
+
+    if (rounded_size != 0U)
+    {
+        if (ptr == NULL)
+        {
+            errno = 0;
+            result = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
+            if (errno != 0)
             {
-                return NULL;
+                result = NULL;
             }
         }
         else
         {
-            padding = 0U;
+            (void)munmap(ptr, rounded_size);
         }
-        mapping_size = total_size + padding;
-        allocation = mmap(NULL, mapping_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-        if (allocation == MAP_FAILED)
-        {
-            return NULL;
-        }
-
-        allocation->mapping_size = mapping_size;
-        return allocation + 1;
     }
-    else
-    {
-        struct mapped_allocation *allocation;
 
-        allocation = ((struct mapped_allocation *)ptr) - 1;
-        (void)size;
-        (void)munmap(allocation, allocation->mapping_size);
-        return NULL;
-    }
+    return result;
 }
 //! [parser_process_memory]
 
