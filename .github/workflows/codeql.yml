@@ -58,6 +58,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Setup Python@3.13
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11' 
+
     # Add any setup steps before running the `github/codeql-action/init` action.
     # This includes steps like installing compilers or runtimes (`actions/setup-node`
     # or others). This is typically only required for manual builds.
@@ -92,6 +97,8 @@ jobs:
       run: |
         cmake -B build
         cmake --build build
+        python3 .github/scripts/process_coding_standards_config.py
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
       with:
