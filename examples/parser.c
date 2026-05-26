@@ -20,7 +20,6 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
-#include <errno.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -67,34 +66,34 @@ static size_t mapping_size(size_t size)
 }
 
 //! [parser_process_memory]
-void *memfunc(void *user_data, void *ptr, size_t size)
+static void *memfunc(void *user_data, void *ptr, size_t size)
 {
     const int prot = (int)((unsigned int)PROT_READ | (unsigned int)PROT_WRITE);
     const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
-    void *result = NULL;
     size_t rounded_size = 0U;
 
     (void)user_data;
     rounded_size = mapping_size(size);
 
-    if (rounded_size != 0U)
+    if (rounded_size == 0U)
     {
-        if (ptr == NULL)
+        ptr = NULL;
+    }
+    else if (ptr == NULL)
+    {
+        ptr = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
+        if (ptr == MAP_FAILED)
         {
-            errno = 0;
-            result = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (errno != 0)
-            {
-                result = NULL;
-            }
-        }
-        else
-        {
-            (void)munmap(ptr, rounded_size);
+            ptr = NULL;
         }
     }
+    else
+    {
+        (void)munmap(ptr, rounded_size);
+        ptr = NULL;
+    }
 
-    return result;
+    return ptr;
 }
 //! [parser_process_memory]
 
