@@ -6,10 +6,9 @@ section below configures Copilot for a specific use case in this repository.
 Add further top-level sections as needed (general coding conventions, review
 guidance, etc.).
 
-## Agentic autofix for CodeQL Coding Standards
+## Autofix for CodeQL Coding Standards
 
-This section configures GitHub Copilot (in particular, Copilot **agentic
-autofix**) when it generates pull requests to remediate alerts produced by the
+This section configures GitHub Copilot **Autofix** when it generates pull requests to remediate alerts produced by the
 [CodeQL Coding Standards](https://github.com/github/codeql-coding-standards/)
 project. It applies to alerts for any of the supported standards (MISRA C,
 MISRA C++, AUTOSAR C++, CERT C, CERT C++).
@@ -17,8 +16,7 @@ MISRA C++, AUTOSAR C++, CERT C, CERT C++).
 ### 1. Reference material — where to learn each rule
 
 Before proposing a fix, consult the rule’s authoritative implementation as well as the corresponding compliant and non-compliant code patterns available as test cases in the CodeQL Coding Standards [`github/codeql-coding-standards`](https://github.com/github/codeql-coding-standards/)
-repository. That repository is the single source of truth for what the query
-detects and what compliant code looks like.
+repository. That repository is the single source of truth for what the query detects and what compliant code looks like.
 
 Project layout (per language / standard):
 
@@ -26,6 +24,8 @@ Project layout (per language / standard):
 <language>/<standard>/src/rules/<rule-id>/    # query source (.ql) and rule help (.md, .qhelp)
 <language>/<standard>/test/rules/<rule-id>/   # test cases, with COMPLIANT / NON_COMPLIANT markers
 ```
+
+When referring to the alerts you are addressing, include a clickable link.
 
 When generating a fix:
 
@@ -44,7 +44,7 @@ The full list of supported rules per standard is published as
 ### 2. Fix discipline — keep changes minimal and standards-compliant
 
 - **Minimum diff.** Modify the smallest possible amount of code that
-  eliminates the alert. Do not refactor surrounding code, rename symbols,
+  eliminates the assigned alerts. Do not refactor surrounding code, rename symbols,
   reformat unrelated lines, or change public APIs unless strictly required to
   satisfy the rule.
 - **No drive-by changes.** Do not add features, fix unrelated warnings, change
