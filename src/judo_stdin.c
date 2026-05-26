@@ -33,11 +33,12 @@
 #define JUDO_STDERR_FD STDERR_FILENO
 #endif
 
-bool judo_writeall(int32_t fd, const char *buffer, size_t length)
+bool judo_writeall(int32_t fd, const char buffer[], size_t length)
 {
     bool success = true;
+    size_t offset = 0u;
 
-    for (size_t offset = 0u; offset < length;)
+    while (offset < length)
     {
         const size_t remaining = length - offset;
 #if defined(_WIN32)
