@@ -1,23 +1,6 @@
 deviations:
-  - rule-id: "RULE-8-13"
-    justification: "src/judo_main.c is CLI-oriented glue code and is not maintained for MISRA conformance in this repository."
-    scope: "file"
-    background: "The judo_main translation unit hosts command-line integration and diagnostic/reporting code that intentionally prioritizes CLI behavior over MISRA-oriented refactoring."
-    requirements:
-      - "Do not apply this deviation outside src/judo_main.c."
-      - "Keep parser and allocator interfaces unchanged."
-    raised-by:
-      name: "@copilot"
-      date: "2026-05-26"
-    paths:
-      - "src/judo_main.c"
-  - rule-id: "RULE-15-5"
-    justification: "src/judo_main.c is CLI-oriented glue code and is not maintained for MISRA conformance in this repository."
-    scope: "file"
-    background: "The judo_main translation unit hosts command-line integration and diagnostic/reporting code that intentionally prioritizes CLI behavior over MISRA-oriented refactoring."
-    requirements:
-      - "Do not apply this deviation outside src/judo_main.c."
-      - "Keep parser and allocator interfaces unchanged."
+  - justification: "This program does not attempt to be MISRA C compliant."
+    scope: "CLI-only user-facing output paths in judo_main."
     raised-by:
       name: "@copilot"
       date: "2026-05-26"
