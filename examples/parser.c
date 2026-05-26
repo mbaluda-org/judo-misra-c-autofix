@@ -22,20 +22,64 @@
 #include "judo.h"
 #include <stdio.h>
 #include <stddef.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 char *judo_readstdin(size_t *size);
+
+struct mapped_allocation
+{
+    size_t mapping_size;
+};
+
+static size_t page_size(void)
+{
+    const long size = sysconf(_SC_PAGESIZE);
+    if (size <= 0)
+    {
+        return 4096U;
+    }
+    return (size_t)size;
+}
 
 //! [parser_process_memory]
 void *memfunc(void *user_data, void *ptr, size_t size)
 {
+    (void)user_data;
+
     if (ptr == NULL)
     {
-        return malloc(size);
+        const size_t header_size = sizeof(struct mapped_allocation);
+        const size_t pages = page_size();
+        size_t total_size;
+        size_t mapping_size;
+
+        if (size > (SIZE_MAX - header_size))
+        {
+            return NULL;
+        }
+        total_size = header_size + size;
+        if (total_size > (SIZE_MAX - (pages - 1U)))
+        {
+            return NULL;
+        }
+        mapping_size = ((total_size + pages - 1U) / pages) * pages;
+        struct mapped_allocation *allocation = mmap(NULL, mapping_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+        if (allocation == MAP_FAILED)
+        {
+            return NULL;
+        }
+
+        allocation->mapping_size = mapping_size;
+        return allocation + 1;
     }
     else
     {
-        free(ptr);
+        struct mapped_allocation *allocation = ((struct mapped_allocation *)ptr) - 1;
+        (void)size;
+        (void)munmap(allocation, allocation->mapping_size);
         return NULL;
     }
 }
