@@ -1,2 +1,7 @@
 deviations:
-  - path: "src/judo_main.c"
+- rule-id: "DIR-4-12"
+  query-id: "c/misra/std-lib-dynamic-memory-allocation-used"
+  justification: "This program does not attempt to be MISRA C compliant."
+  paths:
+    - "src/judo_main.c"
+      "src/judo_stdin.c"
