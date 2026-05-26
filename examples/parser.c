@@ -71,18 +71,18 @@ static size_t mapping_size(size_t size)
  * MAP_FAILED is defined by this platform as (void *)-1. Check that sentinel
  * via the pointer object representation to avoid a direct pointer/integer cast.
  */
-static int mapping_failed(const void *mapping)
+static uint8_t mapping_failed(const void *mapping)
 {
     unsigned char representation[sizeof(mapping)];
     size_t index = 0U;
-    int failed = 1;
+    uint8_t failed = 1U;
 
     (void)memcpy(representation, &mapping, sizeof(representation));
     while (index < sizeof(representation))
     {
         if (representation[index] != UCHAR_MAX)
         {
-            failed = 0;
+            failed = 0U;
             break;
         }
         index++;
@@ -108,7 +108,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
         if (ptr == NULL)
         {
             mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (mapping_failed(mapping) != 0)
+            if (mapping_failed(mapping) != 0U)
             {
                 mapping = NULL;
             }
