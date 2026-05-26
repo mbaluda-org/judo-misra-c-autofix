@@ -268,7 +268,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
     }
 }
 
-static void *memfunc(void *user_data, void *ptr, size_t size)
+static void *judo_main_memfunc(void *user_data, void *ptr, size_t size)
 {
     if (ptr == NULL)
     {
@@ -293,7 +293,7 @@ static void judo_main(const struct program_options *options)
 
     struct judo_error error = {0};
     struct judo_value *root;
-    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, memfunc);
+    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, judo_main_memfunc);
     if (result != JUDO_RESULT_SUCCESS)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
@@ -323,7 +323,7 @@ static void judo_main(const struct program_options *options)
     }
 
     free(dynbuf);
-    judo_free(root, NULL, memfunc);
+    judo_free(root, NULL, judo_main_memfunc);
 }
 
 int main(int argc, char *argv[])
