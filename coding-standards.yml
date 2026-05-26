@@ -1,0 +1,9 @@
+deviations:
+  - rule-id: "RULE-8-13"
+    justification: "src/judo_main.c is CLI-oriented glue code and is not maintained for MISRA conformance in this repository."
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-15-5"
+    justification: "src/judo_main.c is CLI-oriented glue code and is not maintained for MISRA conformance in this repository."
+    paths:
+      - "src/judo_main.c"
