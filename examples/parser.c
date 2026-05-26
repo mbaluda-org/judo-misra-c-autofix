@@ -20,10 +20,11 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
-#include <errno.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -66,6 +67,25 @@ static size_t mapping_size(size_t size)
     return rounded_size;
 }
 
+static int mapping_failed(const void *mapping)
+{
+    unsigned char representation[sizeof(mapping)];
+    size_t index = 0U;
+    int failed = 1;
+
+    (void)memcpy(representation, &mapping, sizeof(representation));
+    while (index < sizeof(representation))
+    {
+        if (representation[index] != UCHAR_MAX)
+        {
+            failed = 0;
+        }
+        index++;
+    }
+
+    return failed;
+}
+
 //! [parser_process_memory]
 static void *memfunc(void *user_data, void *ptr, size_t size)
 {
@@ -73,7 +93,6 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
     const void * const context = user_data;
     void *mapping = NULL;
-    int mmap_errno = 0;
     size_t rounded_size = 0U;
 
     (void)context;
@@ -83,10 +102,8 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     {
         if (ptr == NULL)
         {
-            errno = 0;
             mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            mmap_errno = errno;
-            if (mmap_errno != 0)
+            if (mapping_failed(mapping) != 0)
             {
                 mapping = NULL;
             }
