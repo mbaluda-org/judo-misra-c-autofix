@@ -51,7 +51,8 @@ void *memfunc(void *user_data, void *ptr, size_t size)
     if (ptr == NULL)
     {
         const size_t header_size = sizeof(struct mapped_allocation);
-        const size_t pages = page_size();
+        const size_t page_bytes = page_size();
+        struct mapped_allocation *allocation;
         size_t total_size;
         size_t mapping_size;
 
@@ -60,12 +61,12 @@ void *memfunc(void *user_data, void *ptr, size_t size)
             return NULL;
         }
         total_size = header_size + size;
-        if (total_size > (SIZE_MAX - (pages - 1U)))
+        if (total_size > (SIZE_MAX - (page_bytes - 1U)))
         {
             return NULL;
         }
-        mapping_size = ((total_size + pages - 1U) / pages) * pages;
-        struct mapped_allocation *allocation = mmap(NULL, mapping_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        mapping_size = ((total_size + page_bytes - 1U) / page_bytes) * page_bytes;
+        allocation = mmap(NULL, mapping_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
         if (allocation == MAP_FAILED)
         {
