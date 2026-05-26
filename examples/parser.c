@@ -73,6 +73,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     const void * const context = user_data;
     void *mapping = NULL;
     size_t rounded_size = 0U;
+    unsigned char resident_state = 0U;
 
     (void)context;
     rounded_size = mapping_size(size);
@@ -82,7 +83,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
         if (ptr == NULL)
         {
             mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
-            if (mapping == MAP_FAILED)
+            if (mincore(mapping, 1U, &resident_state) != 0)
             {
                 mapping = NULL;
             }
