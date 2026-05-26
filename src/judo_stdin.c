@@ -15,11 +15,13 @@
 // by the command-line interface and Judo examples. This code does not
 // attempt to be MISRA compliant.
 
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <stdint.h>
-#include <stdbool.h>
+
+#include "judo_stdin.h"
 
 #if defined(_WIN32)
 #include <io.h>
@@ -48,7 +50,7 @@ bool judo_writeall(int32_t fd, const char *buffer, size_t length)
         if (bytes_written <= 0)
         {
             success = false;
-            remaining = 0u;
+            break;
         }
         else
         {

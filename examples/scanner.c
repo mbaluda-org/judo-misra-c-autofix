@@ -19,6 +19,7 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
+#include "../src/judo_stdin.h"
 #include <stdio.h>
 #include <stddef.h>
 
@@ -29,16 +30,12 @@
 #define JUDO_STDOUT_FD STDOUT_FILENO
 #endif
 
-bool judo_writeall(int32_t fd, const char *buffer, size_t length);
-
 static void print_object_name(struct judo_stream stream, const char *json)
 {
     (void)judo_writeall(JUDO_STDOUT_FD, "{name: ", sizeof("{name: ") - 1u);
     (void)judo_writeall(JUDO_STDOUT_FD, &json[stream.where.offset], (size_t)stream.where.length);
     (void)judo_writeall(JUDO_STDOUT_FD, "}\n", sizeof("}\n") - 1u);
 }
-
-char *judo_readstdin(size_t *size);
 
 static void process_token(struct judo_stream stream, const char *json)
 {

@@ -18,6 +18,7 @@
 // This program does not attempt to be MISRA C compliant.
 
 #include "judo.h"
+#include "judo_stdin.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,9 +34,6 @@
 #include <unistd.h>
 #define JUDO_STDOUT_FD STDOUT_FILENO
 #endif
-
-char *judo_readstdin(size_t *size);
-bool judo_writeall(int32_t fd, const char *buffer, size_t length);
 
 static void judo_write_stdout_literal(const char *text)
 {
