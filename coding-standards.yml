@@ -1,8 +1,2 @@
 deviations:
-  - justification: "This program does not attempt to be MISRA C compliant."
-    scope: "CLI-only user-facing output paths in judo_main."
-    raised-by:
-      name: "@copilot"
-      date: "2026-05-26"
-    paths:
-      - "src/judo_main.c"
+  - path: "src/judo_main.c"
