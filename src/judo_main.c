@@ -63,8 +63,8 @@ static void judo_write_all(judo_fd_t fd, const char *buffer, size_t length)
 {
     if (length > 0U)
     {
-        const char *write_cursor = buffer;
         {
+            const char *write_cursor = buffer;
             size_t remaining = length;
 
             while (remaining > 0U)
