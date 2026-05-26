@@ -38,9 +38,9 @@ typedef int32_t judo_fd_t;
 typedef int32_t judo_write_result_t;
 #define JUDO_WRITE _write
 #else
-#if SSIZE_MAX == INT64_MAX
+#if defined(SSIZE_MAX) && defined(INT64_MAX) && (SSIZE_MAX == INT64_MAX)
 typedef int64_t judo_write_result_t;
-#elif SSIZE_MAX == INT32_MAX
+#elif defined(SSIZE_MAX) && defined(INT32_MAX) && (SSIZE_MAX == INT32_MAX)
 typedef int32_t judo_write_result_t;
 #else
 #error Unsupported ssize_t width
@@ -61,7 +61,9 @@ struct program_options
 
 static void judo_write_all(judo_fd_t fd, const char *buffer, size_t length)
 {
-    for (size_t bytes_written = 0U; bytes_written < length;)
+    size_t bytes_written = 0U;
+
+    while (bytes_written < length)
     {
         const judo_write_result_t result = JUDO_WRITE(fd, &buffer[bytes_written], length - bytes_written);
         if (result <= 0)
