@@ -3,5 +3,8 @@ deviations:
     query-id: "c/misra/standard-library-inputoutput-functions-used"
     justification: "This file implements the CLI tool, where formatted console I/O is intentional and outside the MISRA-conformant library scope."
     scope: "CLI-only output behavior."
+    raised-by:
+      name: "@copilot"
+      date: "2026-05-26"
     paths:
-      - "judo_main.c"
+      - "src/judo_main.c"
