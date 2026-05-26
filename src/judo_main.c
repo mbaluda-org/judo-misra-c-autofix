@@ -309,7 +309,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
         break;
 
     case JUDO_TYPE_OBJECT:
-        if (judo_len(value) ==0)
+        if (judo_len(value) == 0)
         {
             judo_write_cstr(JUDO_STDOUT_FD, "{}");
         }
