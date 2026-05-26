@@ -36,24 +36,27 @@
 bool judo_writeall(int32_t fd, const char buffer[], size_t length)
 {
     bool success = true;
-    size_t offset = 0u;
 
-    while (offset < length)
     {
-        const size_t remaining = length - offset;
-#if defined(_WIN32)
-        const uint32_t chunk_length = (remaining > (size_t)INT_MAX) ? (uint32_t)INT_MAX : (uint32_t)remaining;
-        const int32_t bytes_written = _write(fd, &buffer[offset], chunk_length);
-#else
-        const ssize_t bytes_written = write(fd, &buffer[offset], remaining);
-#endif
-        if (bytes_written <= 0)
-        {
-            success = false;
-            break;
-        }
+        size_t offset = 0u;
 
-        offset += (size_t)bytes_written;
+        while (offset < length)
+        {
+            const size_t remaining = length - offset;
+#if defined(_WIN32)
+            const uint32_t chunk_length = (remaining > (size_t)INT_MAX) ? (uint32_t)INT_MAX : (uint32_t)remaining;
+            const int32_t bytes_written = _write(fd, &buffer[offset], chunk_length);
+#else
+            const ssize_t bytes_written = write(fd, &buffer[offset], remaining);
+#endif
+            if (bytes_written <= 0)
+            {
+                success = false;
+                break;
+            }
+
+            offset += (size_t)bytes_written;
+        }
     }
 
     return success;
