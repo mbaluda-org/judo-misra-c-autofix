@@ -88,15 +88,18 @@ static void judo_write_span(int fd, const char *source, struct judo_span where)
 
 static void judo_write_ulong(int fd, unsigned long value)
 {
+    static const char decimal_digits[] = "0123456789";
     char digits[32];
     size_t length = 0;
+    unsigned long remaining = value;
 
     do
     {
-        digits[length] = (char)('0' + (value % 10UL));
-        value /= 10UL;
-        length += 1;
-    } while (value != 0UL);
+        const unsigned long digit = remaining % 10UL;
+        digits[length] = decimal_digits[(size_t)digit];
+        remaining /= 10UL;
+        length += 1U;
+    } while (remaining != 0UL);
 
     while (length > 0U)
     {
@@ -490,9 +493,9 @@ int main(int argc, char *argv[])
             exit(0);
         }
 
-        if (strcmp(arg, "-q") == 0 ||
-            strcmp(arg, "--quiet") == 0 ||
-            strcmp(arg, "--quite") == 0)
+        if ((strcmp(arg, "-q") == 0) ||
+            (strcmp(arg, "--quiet") == 0) ||
+            (strcmp(arg, "--quite") == 0))
         {
             options.suppress_output = true;
             continue;
