@@ -29,14 +29,21 @@
 #include <unistd.h>
 #endif
 
-#define JUDO_STDOUT_FD 1
-#define JUDO_STDERR_FD 2
+#define JUDO_STDOUT_FD INT32_C(1)
+#define JUDO_STDERR_FD INT32_C(2)
 
+typedef int32_t judo_fd_t;
 #if defined(_WIN32)
-typedef int judo_write_result_t;
+typedef int32_t judo_write_result_t;
 #define JUDO_WRITE _write
 #else
-typedef ssize_t judo_write_result_t;
+#if SIZE_MAX == UINT64_MAX
+typedef int64_t judo_write_result_t;
+#elif SIZE_MAX == UINT32_MAX
+typedef int32_t judo_write_result_t;
+#else
+#error Unsupported size_t width
+#endif
 #define JUDO_WRITE write
 #endif
 
@@ -48,13 +55,12 @@ struct program_options
     bool pretty_print;
     bool use_tabs;
     bool escape_unicode;
-    int indention_width;
+    int32_t indention_width;
 };
 
-static void judo_write_all(int fd, const char *buffer, size_t length)
+static void judo_write_all(judo_fd_t fd, const char *buffer, size_t length)
 {
-    size_t bytes_written = 0;
-    while (bytes_written < length)
+    for (size_t bytes_written = 0U; bytes_written < length;)
     {
         const judo_write_result_t result = JUDO_WRITE(fd, &buffer[bytes_written], length - bytes_written);
         if (result <= 0)
@@ -65,41 +71,41 @@ static void judo_write_all(int fd, const char *buffer, size_t length)
     }
 }
 
-static void judo_write_char(int fd, char ch)
+static void judo_write_char(judo_fd_t fd, char ch)
 {
-    judo_write_all(fd, &ch, 1);
+    judo_write_all(fd, &ch, (size_t)1U);
 }
 
-static void judo_write_cstr(int fd, const char *string)
+static void judo_write_cstr(judo_fd_t fd, const char *string)
 {
     judo_write_all(fd, string, strlen(string));
 }
 
-static void judo_write_line(int fd, const char *string)
+static void judo_write_line(judo_fd_t fd, const char *string)
 {
     judo_write_cstr(fd, string);
     judo_write_char(fd, '\n');
 }
 
-static void judo_write_span(int fd, const char *source, struct judo_span where)
+static void judo_write_span(judo_fd_t fd, const char *source, struct judo_span where)
 {
     judo_write_all(fd, &source[where.offset], (size_t)where.length);
 }
 
-static void judo_write_ulong(int fd, unsigned long value)
+static void judo_write_uint32(judo_fd_t fd, uint32_t value)
 {
     static const char decimal_digits[] = "0123456789";
     char digits[32];
     size_t length = 0;
-    unsigned long remaining = value;
+    uint32_t remaining = value;
 
     do
     {
-        const unsigned long digit = remaining % 10UL;
+        const uint32_t digit = remaining % 10U;
         digits[length] = decimal_digits[(size_t)digit];
-        remaining /= 10UL;
+        remaining /= 10U;
         length++;
-    } while (remaining != 0UL);
+    } while (remaining != 0U);
 
     while (length > 0U)
     {
@@ -164,7 +170,7 @@ static int32_t decode_utf8(const char *string, uint32_t *scalar)
 // requires implementing the Unicode grapheme cluster break algorithm.
 // An implementation of this algorithm is available in the Unicorn library
 // available here: <https://railgunlabs.com/unicorn/>.
-static void compulate_source_location(const char *input, int32_t input_length, int32_t location, int *line, int *column)
+static void compulate_source_location(const char *input, int32_t input_length, int32_t location, int32_t *line, int32_t *column)
 {
     *line = 1;
     *column = 1;
@@ -250,7 +256,7 @@ static void print_tree(struct judo_value *value, const char *source, const struc
     }
 }
 
-static void pretty_print_indent(int depth, const struct program_options *options)
+static void pretty_print_indent(int32_t depth, const struct program_options *options)
 {
     // The following printf trick only works if the depth is greater than 0, otherwise
     // if it's zero, then it leaves a single space which we don't want.
@@ -258,15 +264,15 @@ static void pretty_print_indent(int depth, const struct program_options *options
     {
         if (options->use_tabs)
         {
-            for (int i = 0; i < depth; i++)
+            for (int32_t i = 0; i < depth; i++)
             {
                 judo_write_char(JUDO_STDOUT_FD, '\t');
             }
         }
         else
         {
-            const int width = depth * options->indention_width;
-            for (int i = 0; i < width; i++)
+            const int32_t width = depth * options->indention_width;
+            for (int32_t i = 0; i < width; i++)
             {
                 judo_write_char(JUDO_STDOUT_FD, ' ');
             }
@@ -274,7 +280,7 @@ static void pretty_print_indent(int depth, const struct program_options *options
     }
 }
 
-static void pretty_print_tree(struct judo_value *value, const char *source, int depth, const struct program_options *options)
+static void pretty_print_tree(struct judo_value *value, const char *source, int32_t depth, const struct program_options *options)
 {
     struct judo_span where = {0};
     switch (judo_gettype(value))
@@ -381,12 +387,13 @@ static void judo_main(const struct program_options *options)
             exit(2);
         }
 
-        int line, column;
+        int32_t line;
+        int32_t column;
         compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
         judo_write_cstr(JUDO_STDERR_FD, "stdin:");
-        judo_write_ulong(JUDO_STDERR_FD, (unsigned long)line);
+        judo_write_uint32(JUDO_STDERR_FD, (uint32_t)line);
         judo_write_char(JUDO_STDERR_FD, ':');
-        judo_write_ulong(JUDO_STDERR_FD, (unsigned long)column);
+        judo_write_uint32(JUDO_STDERR_FD, (uint32_t)column);
         judo_write_cstr(JUDO_STDERR_FD, ": error: ");
         judo_write_cstr(JUDO_STDERR_FD, error.description);
         judo_write_char(JUDO_STDERR_FD, '\n');
@@ -452,7 +459,7 @@ int main(int argc, char *argv[])
 #endif
 
             judo_write_cstr(JUDO_STDOUT_FD, "  Maximum structure depth: ");
-            judo_write_ulong(JUDO_STDOUT_FD, (unsigned long)JUDO_MAXDEPTH);
+            judo_write_uint32(JUDO_STDOUT_FD, (uint32_t)JUDO_MAXDEPTH);
             judo_write_char(JUDO_STDOUT_FD, '\n');
 
             judo_write_line(JUDO_STDOUT_FD, "");
@@ -561,7 +568,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                options.indention_width = (int)value;
+                options.indention_width = (int32_t)value;
             }
             continue;
         }
