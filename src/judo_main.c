@@ -392,7 +392,7 @@ static void judo_main(const struct program_options *options)
 
         int32_t line;
         int32_t column;
-        compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
+        compute_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
         judo_write_cstr(JUDO_STDERR_FD, "stdin:");
         judo_write_uint32(JUDO_STDERR_FD, (uint32_t)line);
         judo_write_char(JUDO_STDERR_FD, ':');
