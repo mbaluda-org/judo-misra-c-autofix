@@ -127,8 +127,15 @@ int main(int argc, char *argv[])
         }
         else
         {
-            fprintf(stderr, "error: %s\n", error.description);
-            exit_code = 1;
+            const int print_result = fprintf(stderr, "error: %s\n", error.description);
+            if (print_result < 0)
+            {
+                exit_code = 2;
+            }
+            else
+            {
+                exit_code = 1;
+            }
         }
 //! [parser_process_input]
     }
