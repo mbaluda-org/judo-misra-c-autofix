@@ -33,7 +33,7 @@ struct program_options
     bool pretty_print;
     bool use_tabs;
     bool escape_unicode;
-    int indention_width;
+    int32_t indention_width;
 };
 
 static int32_t decode_utf8(const char *string, uint32_t *scalar)
@@ -92,7 +92,7 @@ static int32_t decode_utf8(const char *string, uint32_t *scalar)
 // requires implementing the Unicode grapheme cluster break algorithm.
 // An implementation of this algorithm is available in the Unicorn library
 // available here: <https://railgunlabs.com/unicorn/>.
-static void compulate_source_location(const char *input, int32_t input_length, int32_t location, int *line, int *column)
+static void compute_source_location(const char *input, int32_t input_length, int32_t location, int32_t *line, int32_t *column)
 {
     *line = 1;
     *column = 1;
@@ -177,7 +177,7 @@ static void print_tree(struct judo_value *value, const char *source, const struc
     }
 }
 
-static void pretty_print_indent(int depth, const struct program_options *options)
+static void pretty_print_indent(int32_t depth, const struct program_options *options)
 {
     // The following printf trick only works if the depth is greater than 0, otherwise
     // if it's zero, then it leaves a single space which we don't want.
@@ -185,7 +185,7 @@ static void pretty_print_indent(int depth, const struct program_options *options
     {
         if (options->use_tabs)
         {
-            for (int i = 0; i < depth; i++)
+            for (int32_t i = 0; i < depth; i++)
             {
                 putchar('\t');
             }
@@ -197,7 +197,7 @@ static void pretty_print_indent(int depth, const struct program_options *options
     }
 }
 
-static void pretty_print_tree(struct judo_value *value, const char *source, int depth, const struct program_options *options)
+static void pretty_print_tree(struct judo_value *value, const char *source, int32_t depth, const struct program_options *options)
 {
     struct judo_span where = {0};
     switch (judo_gettype(value))
@@ -303,8 +303,8 @@ static void judo_main(const struct program_options *options)
             exit(2);
         }
 
-        int line, column;
-        compulate_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
+        int32_t line, column;
+        compute_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
         fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
         free(dynbuf);
         exit(1);
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
         .indention_width = 4,
     };
 
-    for (int i = 1; i < argc; i++)
+    for (int32_t i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
 
@@ -474,7 +474,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                options.indention_width = (int)value;
+                options.indention_width = (int32_t)value;
             }
             continue;
         }
