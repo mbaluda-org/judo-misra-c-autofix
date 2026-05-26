@@ -334,11 +334,9 @@ int main(int argc, char *argv[])
         .indention_width = 4,
     };
 
-    int32_t i = 1;
-    while (i < argc)
+    for (int32_t i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
-        int32_t next_i = i + 1;
 
         if (strcmp(arg, "-h") == 0 ||
             strcmp(arg, "--help") == 0)
@@ -413,7 +411,6 @@ int main(int argc, char *argv[])
             strcmp(arg, "--quite") == 0)
         {
             options.suppress_output = true;
-            i = next_i;
             continue;
         }
 
@@ -421,7 +418,6 @@ int main(int argc, char *argv[])
             strcmp(arg, "--pretty") == 0)
         {
             options.pretty_print = true;
-            i = next_i;
             continue;
         }
 
@@ -429,7 +425,6 @@ int main(int argc, char *argv[])
             strcmp(arg, "--tabs") == 0)
         {
             options.use_tabs = true;
-            i = next_i;
             continue;
         }
 
@@ -438,7 +433,6 @@ int main(int argc, char *argv[])
             strcmp(arg, "--escape") == 0)
         {
             options.escape_unicode = true;
-            i = next_i;
             continue;
         }
 
@@ -452,8 +446,8 @@ int main(int argc, char *argv[])
                     fprintf(stderr, "error: expected indention width\n");
                     exit(3);
                 }
-                arg = argv[next_i];
-                next_i += 1;
+                i += 1;
+                arg = argv[i];
             }
             else
             {
@@ -482,7 +476,6 @@ int main(int argc, char *argv[])
             {
                 options.indention_width = (int32_t)value;
             }
-            i = next_i;
             continue;
         }
 
