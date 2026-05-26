@@ -19,6 +19,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #if defined(_WIN32)
 #include <io.h>
@@ -30,8 +31,9 @@
 #define JUDO_STDERR_FD STDERR_FILENO
 #endif
 
-void judo_writeall(int32_t fd, const char *buffer, size_t length)
+bool judo_writeall(int32_t fd, const char *buffer, size_t length)
 {
+    bool success = true;
     const char *next_buffer = buffer;
     size_t remaining = length;
 
@@ -45,6 +47,7 @@ void judo_writeall(int32_t fd, const char *buffer, size_t length)
 #endif
         if (bytes_written <= 0)
         {
+            success = false;
             remaining = 0u;
         }
         else
@@ -53,6 +56,8 @@ void judo_writeall(int32_t fd, const char *buffer, size_t length)
             remaining -= (size_t)bytes_written;
         }
     }
+
+    return success;
 }
 
 char *judo_readstdin(size_t *size)
@@ -86,7 +91,7 @@ char *judo_readstdin(size_t *size)
         // This also ensures the buffer capacity remains under the maximum signed 32-bit integer.
         if (new_capacity >= 1024 * 1024 * 10)
         {
-            judo_writeall(JUDO_STDERR_FD, "error: input too large\n", sizeof("error: input too large\n") - 1u);
+            (void)judo_writeall(JUDO_STDERR_FD, "error: input too large\n", sizeof("error: input too large\n") - 1u);
             free(dynbuf);
             return NULL;
         }

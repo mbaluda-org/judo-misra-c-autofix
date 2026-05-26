@@ -35,11 +35,11 @@
 #endif
 
 char *judo_readstdin(size_t *size);
-void judo_writeall(int32_t fd, const char *buffer, size_t length);
+bool judo_writeall(int32_t fd, const char *buffer, size_t length);
 
 static void judo_write_stdout_literal(const char *text)
 {
-    judo_writeall(JUDO_STDOUT_FD, text, strlen(text));
+    (void)judo_writeall(JUDO_STDOUT_FD, text, strlen(text));
 }
 
 static void judo_write_stdout_uint32(uint32_t value)
@@ -56,7 +56,7 @@ static void judo_write_stdout_uint32(uint32_t value)
         remaining_value /= 10u;
     } while (remaining_value != 0u);
 
-    judo_writeall(JUDO_STDOUT_FD, &buffer[index], sizeof(buffer) - index);
+    (void)judo_writeall(JUDO_STDOUT_FD, &buffer[index], sizeof(buffer) - index);
 }
 
 struct program_options

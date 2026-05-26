@@ -29,13 +29,13 @@
 #define JUDO_STDOUT_FD STDOUT_FILENO
 #endif
 
-void judo_writeall(int32_t fd, const char *buffer, size_t length);
+bool judo_writeall(int32_t fd, const char *buffer, size_t length);
 
 static void print_object_name(struct judo_stream stream, const char *json)
 {
-    judo_writeall(JUDO_STDOUT_FD, "{name: ", sizeof("{name: ") - 1u);
-    judo_writeall(JUDO_STDOUT_FD, &json[stream.where.offset], (size_t)stream.where.length);
-    judo_writeall(JUDO_STDOUT_FD, "}\n", sizeof("}\n") - 1u);
+    (void)judo_writeall(JUDO_STDOUT_FD, "{name: ", sizeof("{name: ") - 1u);
+    (void)judo_writeall(JUDO_STDOUT_FD, &json[stream.where.offset], (size_t)stream.where.length);
+    (void)judo_writeall(JUDO_STDOUT_FD, "}\n", sizeof("}\n") - 1u);
 }
 
 char *judo_readstdin(size_t *size);
