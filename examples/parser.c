@@ -76,7 +76,7 @@ static size_t mapping_size(size_t size)
  */
 static uint8_t mapping_failed(const void *mapping)
 {
-    union
+    union pointer_representation
     {
         const void *pointer;
         unsigned char bytes[sizeof(void *)];
@@ -110,7 +110,7 @@ static void *memfunc(void *user_data, void *ptr, size_t size)
     {
         if (ptr == NULL)
         {
-            union
+            union mapping_conversion
             {
                 const void *mapping;
                 void *result;
