@@ -171,7 +171,7 @@ static int32_t decode_utf8(const char *string, uint32_t *scalar)
 // requires implementing the Unicode grapheme cluster break algorithm.
 // An implementation of this algorithm is available in the Unicorn library
 // available here: <https://railgunlabs.com/unicorn/>.
-static void compulate_source_location(const char *input, int32_t input_length, int32_t location, int32_t *line, int32_t *column)
+static void compute_source_location(const char *input, int32_t input_length, int32_t location, int32_t *line, int32_t *column)
 {
     *line = 1;
     *column = 1;
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
         .indention_width = 4,
     };
 
-    for (int i = 1; i < argc; i++)
+    for (int32_t i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
 
