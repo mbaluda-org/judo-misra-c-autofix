@@ -46,6 +46,7 @@ static void process_token(struct judo_stream stream, const char *json)
         printf("{name: %.*s}\n", stream.where.length, &json[stream.where.offset]);
         break;
     default:
+        /* No output for unhandled token kinds. */
         break;
     }
 //! [scanner_process_token]

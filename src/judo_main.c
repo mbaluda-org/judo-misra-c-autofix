@@ -173,6 +173,7 @@ static void print_tree(struct judo_value *value, const char *source, const struc
         break;
 
     default:
+        /* No output for unrecognized value types. */
         break;
     }
 }
@@ -264,6 +265,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int 
         break;
 
     default:
+        /* No output for unrecognized value types. */
         break;
     }
 }
