@@ -462,18 +462,20 @@ int main(int argc, char *argv[])
             char *endptr = NULL;
             errno = 0;
             const unsigned long value = strtoul(arg, &endptr, 10);
-            if (endptr == arg || errno == ERANGE)
+            if ((endptr == arg) || (errno != 0))
             {
                 fprintf(stderr, "error: invalid or missing indention width\n");
                 exit(3);
             }
-            else if (value >= UINT16_MAX || value == 0)
+            else if ((value >= (unsigned long)UINT16_MAX) || (value == 0UL))
             {
                 fprintf(stderr, "error: indention width is too large or small\n");
                 exit(3);
             }
-
-            options.indention_width = (int)value;
+            else
+            {
+                options.indention_width = (int)value;
+            }
             continue;
         }
 
