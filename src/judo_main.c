@@ -61,16 +61,17 @@ struct program_options
 
 static void judo_write_all(judo_fd_t fd, const char *buffer, size_t length)
 {
-    size_t bytes_written = 0U;
+    size_t bytes_written;
+    size_t next_chunk = 0U;
 
-    while (bytes_written < length)
+    for (bytes_written = 0U; bytes_written < length; bytes_written += next_chunk)
     {
         const judo_write_result_t result = JUDO_WRITE(fd, &buffer[bytes_written], length - bytes_written);
         if (result <= 0)
         {
             break;
         }
-        bytes_written += (size_t)result;
+        next_chunk = (size_t)result;
     }
 }
 
