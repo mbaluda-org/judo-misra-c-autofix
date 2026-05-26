@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
             puts("");
             puts("Options:");
             puts("  -q, --quite         Validate the input, but do not print to stdout.");
-            puts("                      Check the exit status for success or errors.");
+            (void) puts("                      Check the exit status for success or errors.");
             puts("");
             puts("  -p, --pretty        Print the JSON in a visually appealing way.");
             puts("");
