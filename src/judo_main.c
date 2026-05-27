@@ -162,14 +162,14 @@ static void print_tree(struct judo_value *value, const char *source, const struc
         for (struct judo_member *member = judo_membfirst(value); member != NULL; member = judo_membnext(member))
         {
             where = judo_name2span(member);
-            printf("%.*s:", where.length, &source[where.offset]);
+            (void) printf("%.*s:", where.length, &source[where.offset]);
             print_tree(judo_membvalue(member), source, options);
             if (judo_membnext(member) != NULL)
             {
-                putchar(',');
+                (void) putchar(',');
             }
         }
-        putchar('}');
+        (void) putchar('}');
         break;
 
     default:
