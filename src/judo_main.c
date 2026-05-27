@@ -173,6 +173,7 @@ static void print_tree(struct judo_value *value, const char *source, const struc
         break;
 
     default:
+        /* Defensive default: no printable representation for unknown type. */
         break;
     }
 }
@@ -264,6 +265,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
         break;
 
     default:
+        /* Defensive default: no pretty-print representation for unknown type. */
         break;
     }
 }
