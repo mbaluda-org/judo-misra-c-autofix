@@ -18,14 +18,43 @@
 // This program does not attempt to be MISRA C compliant.
 
 #include "judo.h"
+#include "judo_stdin.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 
-char *judo_readstdin(size_t *size);
+#if defined(_WIN32)
+#include <io.h>
+#define JUDO_STDOUT_FD 1
+#else
+#include <unistd.h>
+#define JUDO_STDOUT_FD STDOUT_FILENO
+#endif
+
+static void judo_write_stdout_literal(const char *text)
+{
+    (void)judo_writeall(JUDO_STDOUT_FD, text, strlen(text));
+}
+
+static void judo_write_stdout_uint32(uint32_t value)
+{
+    char buffer[sizeof("4294967295")];
+    size_t index = sizeof(buffer);
+    uint32_t remaining_value = value;
+
+    do
+    {
+        index -= 1u;
+        buffer[index] = "0123456789"[remaining_value % 10u];
+        remaining_value /= 10u;
+    } while (remaining_value != 0u);
+
+    (void)judo_writeall(JUDO_STDOUT_FD, &buffer[index], sizeof(buffer) - index);
+}
 
 struct program_options
 {
@@ -341,69 +370,71 @@ int main(int argc, char *argv[])
         if (strcmp(arg, "-h") == 0 ||
             strcmp(arg, "--help") == 0)
         {
-            puts("Usage: judo [options...]");
-            puts("");
-            puts("Judo is a command-line interface to the C library of the same name.");
-            puts("This program reads JSON from stdin and writes it back to stdout.");
-            puts("Errors are written to stderr. Column indices are reported relative");
-            puts("to the code point (not the code unit or grapheme cluster).");
-            puts("");
-
-            puts("Judo is configured at compile-time. This version of Judo was built");
-            puts("with the following options:");
+            judo_write_stdout_literal(
+                "Usage: judo [options...]\n"
+                "\n"
+                "Judo is a command-line interface to the C library of the same name.\n"
+                "This program reads JSON from stdin and writes it back to stdout.\n"
+                "Errors are written to stderr. Column indices are reported relative\n"
+                "to the code point (not the code unit or grapheme cluster).\n"
+                "\n"
+                "Judo is configured at compile-time. This version of Judo was built\n"
+                "with the following options:\n");
 
 #if defined(JUDO_RFC4627)
-            puts("  JSON standard: RFC 4627");
+            judo_write_stdout_literal("  JSON standard: RFC 4627\n");
 #elif defined(JUDO_RFC8259)
-            puts("  JSON standard: RFC 8259");
+            judo_write_stdout_literal("  JSON standard: RFC 8259\n");
 #elif defined(JUDO_JSON5)
-            puts("  JSON standard: JSON5");
+            judo_write_stdout_literal("  JSON standard: JSON5\n");
 #endif
 
-            puts("  JSON extension(s): ");
+            judo_write_stdout_literal("  JSON extension(s): \n");
 #if defined(JUDO_WITH_COMMENTS)
-            puts("    comments");
+            judo_write_stdout_literal("    comments\n");
 #elif defined(JUDO_WITH_TRAILING_COMMAS)
-            puts("    trailing commas");
+            judo_write_stdout_literal("    trailing commas\n");
 #endif
 
-            printf("  Maximum structure depth: %d\n", JUDO_MAXDEPTH);
-
-            puts("");
-            puts("Options:");
-            puts("  -q, --quite         Validate the input, but do not print to stdout.");
-            puts("                      Check the exit status for success or errors.");
-            puts("");
-            puts("  -p, --pretty        Print the JSON in a visually appealing way.");
-            puts("");
-            puts("  -i N, --indent=N    Set the indention width to N spaces when pretty");
-            puts("                      printing with spaces (default is 4).");
-            puts("  -t, --tabs          Indent with tabs instead of spaces when pretty");
-            puts("                      printing.");
-            puts("");
-            puts("  -v, --version       Prints the Judo library version and exits.");
-            puts("  -h, --help          Prints this help message and exits.");
-            puts("");
-            puts("Exit status:");
-            puts("  0  if OK,");
-            puts("  1  if the JSON input is malformed,");
-            puts("  2  if an error occurred while processing the JSON input,");
-            puts("  3  if an invalid command-line option is specified.");
-            puts("");
-            puts("Judo website and online documentation: <https://railgunlabs.com/judo/>");
-            puts("Judo repository: <https://github.com/railgunlabs/judo/>");
-            puts("");
-            puts("Judo is Free Software distributed under the GNU General Public License");
-            puts("version 3 as published by the Free Software Foundation. You may also");
-            puts("license Judo under a commercial license, as set out at");
-            puts("<https://railgunlabs.com/judo/license/>.");
+            judo_write_stdout_literal("  Maximum structure depth: ");
+            judo_write_stdout_uint32((uint32_t)JUDO_MAXDEPTH);
+            judo_write_stdout_literal(
+                "\n"
+                "\n"
+                "Options:\n"
+                "  -q, --quite         Validate the input, but do not print to stdout.\n"
+                "                      Check the exit status for success or errors.\n"
+                "\n"
+                "  -p, --pretty        Print the JSON in a visually appealing way.\n"
+                "\n"
+                "  -i N, --indent=N    Set the indention width to N spaces when pretty\n"
+                "                      printing with spaces (default is 4).\n"
+                "  -t, --tabs          Indent with tabs instead of spaces when pretty\n"
+                "                      printing.\n"
+                "\n"
+                "  -v, --version       Prints the Judo library version and exits.\n"
+                "  -h, --help          Prints this help message and exits.\n"
+                "\n"
+                "Exit status:\n"
+                "  0  if OK,\n"
+                "  1  if the JSON input is malformed,\n"
+                "  2  if an error occurred while processing the JSON input,\n"
+                "  3  if an invalid command-line option is specified.\n"
+                "\n"
+                "Judo website and online documentation: <https://railgunlabs.com/judo/>\n"
+                "Judo repository: <https://github.com/railgunlabs/judo/>\n"
+                "\n"
+                "Judo is Free Software distributed under the GNU General Public License\n"
+                "version 3 as published by the Free Software Foundation. You may also\n"
+                "license Judo under a commercial license, as set out at\n"
+                "<https://railgunlabs.com/judo/license/>.\n");
             exit(0);
         }
 
         if (strcmp(arg, "-v") == 0 ||
             strcmp(arg, "--version") == 0)
         {
-            puts("1.1.0");
+            judo_write_stdout_literal("1.1.0\n");
             exit(0);
         }
 
