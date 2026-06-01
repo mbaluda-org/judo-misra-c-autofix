@@ -1,9 +1,7 @@
 deviations:
 - justification: "This program does not attempt to be MISRA C compliant."
-  path: "src/judo_main.c"
-- justification: "This program does not attempt to be MISRA C compliant."
-  path: "src/judo_stdin.c"
-- justification: "This program does not attempt to be MISRA C compliant."
-  path: "src/parser.c"
-- justification: "This program does not attempt to be MISRA C compliant."
-  path: "src/scanner.c"
+  paths: 
+  - paths-entry: "src/judo_main.c"
+  - paths-entry: "src/judo_stdin.c"
+  - paths-entry: "src/parser.c"
+  - paths-entry: "src/scanner.c"
