@@ -6,3 +6,17 @@ deviations:
     - "src/judo_stdin.c"
     - "examples/parser.c"
     - "examples/scanner.c"
+- rule-id: RULE-18-4
+  justification: "This program does not attempt to be MISRA C compliant."
+  paths: 
+    - "src/judo_main.c"
+    - "src/judo_stdin.c"
+    - "examples/parser.c"
+    - "examples/scanner.c"
+- rule-id: RULE-21-6
+  justification: "This program does not attempt to be MISRA C compliant."
+  paths: 
+    - "src/judo_main.c"
+    - "src/judo_stdin.c"
+    - "examples/parser.c"
+    - "examples/scanner.c"
