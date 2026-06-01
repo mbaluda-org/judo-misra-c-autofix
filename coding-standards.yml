@@ -3,5 +3,5 @@ deviations:
   paths: 
   - paths-entry: "src/judo_main.c"
   - paths-entry: "src/judo_stdin.c"
-  - paths-entry: "src/parser.c"
-  - paths-entry: "src/scanner.c"
+  - paths-entry: "examples/parser.c"
+  - paths-entry: "examples/scanner.c"
