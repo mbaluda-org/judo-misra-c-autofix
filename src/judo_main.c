@@ -273,6 +273,7 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
 struct parse_arena
 {
     size_t at;
+    /* Keep parser allocation on a bounded static arena (MISRA Dir 4.12). */
     uint8_t storage[PARSE_ARENA_CAPACITY];
 };
 
