@@ -1,8 +1,148 @@
 deviations:
-  - justification: "This program does not attempt to be MISRA C compliant."
-    scope: "CLI-only user-facing output paths in judo_main."
+  - rule-id: "RULE-5-9"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    background: "This repository keeps library behavior as the primary conformance target, while the CLI utility is intentionally exempted."
+    requirements:
+      - "Only applies to src/judo_main.c."
     raised-by:
       name: "@copilot"
-      date: "2026-05-26"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-2-7"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-8-9"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-8-13"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-10-3"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-15-1"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-15-5"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-17-7"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-17-8"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-17-12"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-18-4"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-21-3"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-21-6"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-21-8"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-22-1"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "RULE-22-10"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "DIR-4-7"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
+    paths:
+      - "src/judo_main.c"
+  - rule-id: "DIR-4-12"
+    justification: "src/judo_main.c is CLI glue code and is not maintained for MISRA C conformance in this repository."
+    scope: "CLI-only translation unit exclusions."
+    raised-by:
+      name: "@copilot"
+      date: "2026-06-17"
     paths:
       - "src/judo_main.c"
