@@ -20,3 +20,10 @@ deviations:
     - "src/judo_stdin.c"
     - "examples/parser.c"
     - "examples/scanner.c"
+- rule-id: DIR-4-12
+  query-id: c/misra/std-lib-dynamic-memory-allocation-used
+  justification: "CLI stdin helper in src/judo_stdin.c intentionally uses dynamic buffering and is outside MISRA-compliant library scope."
+  raised-by: copilot-autofix
+  scope: "CLI input helper implementation"
+  paths:
+    - "src/judo_stdin.c"
