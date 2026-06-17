@@ -299,14 +299,12 @@ static void judo_main(const struct program_options *options)
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
         {
             fprintf(stderr, "error: memory allocation failed\n");
-            free(dynbuf);
             exit(2);
         }
 
         int32_t line, column;
         compute_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
         fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
-        free(dynbuf);
         exit(1);
     }
 
@@ -322,7 +320,6 @@ static void judo_main(const struct program_options *options)
         }
     }
 
-    free(dynbuf);
     judo_free(root, NULL, memfunc);
 }
 

@@ -16,7 +16,6 @@
 // attempt to be MISRA compliant.
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #if defined(_WIN32)
@@ -26,11 +25,15 @@
 #include <unistd.h>
 #endif
 
+enum
+{
+    JUDO_STDIN_MAX_INPUT_SIZE = 1024 * 1024 * 10
+};
+
 char *judo_readstdin(size_t *size)
 {
-    char *dynbuf = NULL;
+    static char dynbuf[JUDO_STDIN_MAX_INPUT_SIZE];
     size_t dynbuf_length = 0;
-    size_t dynbuf_capacity = 0;
 
 #if defined(_WIN32)
     const int stdin_fd = _fileno(stdin);
@@ -50,7 +53,6 @@ char *judo_readstdin(size_t *size)
         }
         else if (bytes_read < 0)
         {
-            free(dynbuf);
             return NULL;
         }
 
@@ -59,23 +61,10 @@ char *judo_readstdin(size_t *size)
 
         // Limit the input to 10 megabytes to avoid integer overflow elsewhere in the implementation.
         // This also ensures the buffer capacity remains under the maximum signed 32-bit integer.
-        if (new_capacity >= 1024 * 1024 * 10)
+        if (new_capacity >= JUDO_STDIN_MAX_INPUT_SIZE)
         {
             fprintf(stderr, "error: input too large\n");
-            free(dynbuf);
             return NULL;
-        }
-
-        if (new_capacity >= dynbuf_capacity)
-        {
-            char *tmpbuf = realloc(dynbuf, new_capacity);
-            if (tmpbuf == NULL)
-            {
-                free(dynbuf);
-                return NULL;
-            }
-            dynbuf = tmpbuf;
-            dynbuf_capacity = new_capacity;
         }
 
         memcpy(&dynbuf[dynbuf_length], buffer, buffer_length);
