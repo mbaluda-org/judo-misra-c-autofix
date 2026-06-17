@@ -36,6 +36,19 @@ struct program_options
     int32_t indention_width;
 };
 
+enum
+{
+    JUDO_CLI_MAX_PARSE_MEMORY = 1024 * 1024 * 160
+};
+
+struct fixed_allocator
+{
+    size_t used;
+    uintptr_t storage[JUDO_CLI_MAX_PARSE_MEMORY / sizeof(uintptr_t)];
+};
+
+static struct fixed_allocator fixed_allocator = {0};
+
 static int32_t decode_utf8(const char *string, uint32_t *scalar)
 {
     static const uint8_t unsafe_utf8_sequence_lengths[] = {
@@ -270,19 +283,39 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
 
 static void *memfunc(void *user_data, void *ptr, size_t size)
 {
-    if (ptr == NULL)
+    struct fixed_allocator *allocator = (struct fixed_allocator *)user_data;
+    if ((ptr != NULL) || (allocator == NULL))
     {
-        return malloc(size);
-    }
-    else
-    {
-        free(ptr);
         return NULL;
     }
+
+    const size_t alignment = sizeof(allocator->storage[0]);
+    size_t aligned_size = size;
+    const size_t remainder = aligned_size % alignment;
+    if (remainder != 0)
+    {
+        aligned_size += alignment - remainder;
+    }
+
+    // The CLI input is capped at 10 MiB in judo_readstdin(). Reserve enough
+    // fixed storage for small-token inputs that require substantially more
+    // tree memory than source bytes while still avoiding heap allocation.
+    if ((aligned_size > JUDO_CLI_MAX_PARSE_MEMORY) ||
+        (allocator->used > JUDO_CLI_MAX_PARSE_MEMORY - aligned_size))
+    {
+        return NULL;
+    }
+
+    uint8_t *storage = (uint8_t *)allocator->storage;
+    void *memory = &storage[allocator->used];
+    allocator->used += aligned_size;
+    return memory;
 }
 
 static void judo_main(const struct program_options *options)
 {
+    fixed_allocator.used = 0;
+
     size_t dynbuf_length = 0;
     char *dynbuf = judo_readstdin(&dynbuf_length);
     if (dynbuf == NULL)
@@ -293,7 +326,7 @@ static void judo_main(const struct program_options *options)
 
     struct judo_error error = {0};
     struct judo_value *root;
-    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, memfunc);
+    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, &fixed_allocator, memfunc);
     if (result != JUDO_RESULT_SUCCESS)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
@@ -320,7 +353,8 @@ static void judo_main(const struct program_options *options)
         }
     }
 
-    judo_free(root, NULL, memfunc);
+    judo_free(root, &fixed_allocator, memfunc);
+    fixed_allocator.used = 0;
 }
 
 int main(int argc, char *argv[])

@@ -1,9 +1,4 @@
 deviations:
-- rule-id: DIR-4-12
-  justification: "This program does not attempt to be MISRA C compliant."
-  paths:
-    - "src/judo_main.c"
-    - "src/judo_stdin.c"
 - rule-id: RULE-17-7
   justification: "This program does not attempt to be MISRA C compliant."
   paths: 
