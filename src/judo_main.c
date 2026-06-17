@@ -268,21 +268,46 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
     }
 }
 
+#define PARSE_ARENA_CAPACITY (1024u * 1024u * 32u)
+
+struct parse_arena
+{
+    size_t at;
+    uint8_t storage[PARSE_ARENA_CAPACITY];
+};
+
 static void *memfunc(void *user_data, void *ptr, size_t size)
 {
-    if (ptr == NULL)
+    struct parse_arena *arena = (struct parse_arena *)user_data;
+    const size_t align = sizeof(void *);
+
+    if ((ptr != NULL) || (arena == NULL))
     {
-        return malloc(size);
-    }
-    else
-    {
-        free(ptr);
         return NULL;
     }
+
+    size_t at = arena->at;
+    const size_t remainder = at % align;
+    if (remainder != 0u)
+    {
+        at += align - remainder;
+    }
+
+    if ((at > PARSE_ARENA_CAPACITY) || (size > PARSE_ARENA_CAPACITY - at))
+    {
+        return NULL;
+    }
+
+    void *memory = &arena->storage[at];
+    arena->at = at + size;
+    return memory;
 }
 
 static void judo_main(const struct program_options *options)
 {
+    static struct parse_arena arena;
+    arena.at = 0u;
+
     size_t dynbuf_length = 0;
     char *dynbuf = judo_readstdin(&dynbuf_length);
     if (dynbuf == NULL)
@@ -293,20 +318,18 @@ static void judo_main(const struct program_options *options)
 
     struct judo_error error = {0};
     struct judo_value *root;
-    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, memfunc);
+    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, &arena, memfunc);
     if (result != JUDO_RESULT_SUCCESS)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
         {
             fprintf(stderr, "error: memory allocation failed\n");
-            free(dynbuf);
             exit(2);
         }
 
         int32_t line, column;
         compute_source_location(dynbuf, (int32_t)dynbuf_length, error.where.offset, &line, &column);
         fprintf(stderr, "stdin:%d:%d: error: %s\n", line, column, error.description);
-        free(dynbuf);
         exit(1);
     }
 
@@ -322,8 +345,7 @@ static void judo_main(const struct program_options *options)
         }
     }
 
-    free(dynbuf);
-    judo_free(root, NULL, memfunc);
+    judo_free(root, &arena, memfunc);
 }
 
 int main(int argc, char *argv[])
