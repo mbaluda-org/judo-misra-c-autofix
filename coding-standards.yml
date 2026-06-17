@@ -20,3 +20,12 @@ deviations:
     - "src/judo_stdin.c"
     - "examples/parser.c"
     - "examples/scanner.c"
+- rule-id: DIR-4-12
+  query-id: c/misra/std-lib-dynamic-memory-allocation-used
+  justification: "This short-lived CLI entry point accepts standard-library allocation/deallocation in judo_main() and memfunc() for input and parse-tree lifetime management."
+  raised-by: "@copilot"
+  scope: "CLI entry-point and parser memory-management behavior"
+  background: "This repository already maintains MISRA deviations in coding-standards.yml for non-compliant CLI/example code."
+  requirements: "Dynamic allocation must remain bounded to short-lived CLI processing and must not expand into long-running library code paths."
+  paths:
+    - "src/judo_main.c"
