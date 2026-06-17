@@ -284,7 +284,12 @@ static void pretty_print_tree(struct judo_value *value, const char *source, int3
 static void *memfunc(void *user_data, void *ptr, size_t size)
 {
     struct fixed_allocator *allocator = (struct fixed_allocator *)user_data;
-    if ((ptr != NULL) || (allocator == NULL))
+    if (ptr != NULL)
+    {
+        return NULL;
+    }
+
+    if (allocator == NULL)
     {
         return NULL;
     }
@@ -352,9 +357,7 @@ static void judo_main(const struct program_options *options)
             print_tree(root, dynbuf, options);
         }
     }
-
     judo_free(root, &fixed_allocator, memfunc);
-    fixed_allocator.used = 0;
 }
 
 int main(int argc, char *argv[])
