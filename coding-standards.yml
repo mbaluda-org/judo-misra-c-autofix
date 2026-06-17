@@ -23,5 +23,6 @@ deviations:
 - rule-id: DIR-4-12
   query-id: c/misra/std-lib-dynamic-memory-allocation-used
   justification: "CLI/examples input handling intentionally uses dynamic memory and is outside MISRA compliance scope."
+  raised-by: "GitHub Copilot Autofix"
   paths:
     - "src/judo_stdin.c"
