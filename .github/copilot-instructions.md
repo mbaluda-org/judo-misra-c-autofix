@@ -4,17 +4,15 @@
 
 This file contains repository-wide guidance for GitHub Copilot. Each top-level
 section below configures Copilot for a specific use case in this repository.
-Add further top-level sections as needed (general coding conventions, review
-guidance, etc.).
 
-## Agentic autofix for CodeQL Coding Standards
+# Agentic autofix instructions for CodeQL Coding Standards
 
-This section configures **Agentic Autofix** when generating pull requests to
+This document configures **Agentic Autofix** when generating pull requests to
 remediate alerts produced by [CodeQL Coding Standards](https://github.com/github/codeql-coding-standards/).
 It applies to alerts for any of the supported standards (MISRA C, MISRA C++,
 AUTOSAR C++, CERT C, CERT C++).
 
-### 1. Reference material — where to learn each rule
+## 1. Reference material — where to learn each rule
 
 Before proposing a fix, consult the rule’s authoritative implementation as well
 as the corresponding compliant and non-compliant code patterns available as
@@ -43,15 +41,17 @@ The full list of supported rules per standard is published as
 `supported_rules_list_<version>.csv` / `.md` in each
 [release](https://github.com/github/codeql-coding-standards/releases).
 
-### 2. Fix discipline — keep changes minimal and standards-compliant
+## 2. Fix discipline — keep changes minimal and standards-compliant
 
 - **Minimum diff.** Modify the smallest possible amount of code that
   eliminates the alert. Do not refactor surrounding code, rename symbols,
   reformat unrelated lines, or change public APIs unless strictly required to
   satisfy the rule.
-- **No drive-by changes.** Do not add features, fix unrelated warnings, change
-  build flags, update dependencies, or “improve” code that the alert does not
-  point at.
+- **Multiple alerts.** Check if there are other code scanning alerts
+  for the same coding standard reported for the same code location, fix all
+  the relevant alerts at once in the same PR.
+- **No drive-by changes.** Do not add features, change build flags, update
+  dependencies, or “improve” code that the alert does not point at.
 - **Do not attempt at fixing design issues.** A fix should not attempt to
   “improve” the design of the code or address architectural issues.
   Always verify that the code section around the alert is intended to follow
@@ -59,12 +59,12 @@ The full list of supported rules per standard is published as
   The presence of certain design issues (e.g. dynamic memory allocation) might
   indicate that the code is not intended to be compliant with the standard, and
   that a deviation should be added instead of a code fix.
-- **New code must comply with the same standard.** Any code introduced by the
-  fix must itself satisfy the coding standard being verified (e.g. MISRA C++
-  2023). Cross-check the inserted code against the COMPLIANT examples in the
-  corresponding `test/rules/<rule-id>/` directory and against neighbouring
-  rules that are obviously relevant (e.g. don’t fix an integer-conversion rule
-  by introducing a cast that violates a different MISRA rule).
+- **New code must comply with the same standard.** Any code modified by the
+  fix must itself satisfy every rule of the coding standard being verified.
+  Cross-check the changed code against the COMPLIANT examples in the
+  corresponding `test/rules/<rule-id>/` directory and against every other
+  relevant rules (e.g. don’t fix an integer-conversion rule by introducing a
+  cast that violates a different MISRA rule).
 - **Preserve safe and desired functional behavior.** ensure the resulting code
   handles all reasonable real-world scenarios as the code originally intended.
   This may involve precisely maintaining the existing code behavior, or it may
@@ -84,7 +84,19 @@ The full list of supported rules per standard is published as
   scenario would create problems in the code and how the fix will prevent such
   issues and improve the safety and quality of the codebase.
 
-### 3. Deviations — respect project policy and reference it in fixes
+## 3. Do not add build output folders, generated files, or `.gitignore`
+
+Autofix pull requests must only change source files that are part of the
+checked-in project. They must **not** include:
+- Build directories or files generated during compilation (`.build/`, etc.).
+- Editor / IDE state (`.vscode/`, `.idea/`, `.DS_Store`, etc.).
+- **`.gitignore` itself.** Do not add, remove, or reorder entries in
+  `.gitignore` as part of an autofix.
+- The CodeQL workflow files under `.github/workflows/` (e.g. `codeql.yml`).
+  Suppression or scope changes must use the deviation mechanism (see §4),
+  not workflow edits.
+
+## 4. Deviations — respect project policy and reference it in fixes
 
 A project may declare that a rule, file, region, or specific construct is
 intentionally exempt from a coding standard. Such deviations are
@@ -124,7 +136,7 @@ If the alert location is covered by an existing deviation:
   determine whether to use same-line, next-line, or begin/end comment deviations
   Project formatting configuration may be .clang-format, etc.
 
-### 4. False positives — propose a deviation, do not stay silent
+## 5. False positives — propose a deviation, do not stay silent
 
 Precedence: if an alert is judged to be a false positive, the false-positive
 workflow in this section overrides any guidance above about proposing a code
@@ -145,20 +157,20 @@ When an alert is judged to be a false positive, the autofix PR must:
 
 1. **Not modify the flagged code** to “work around” the alert.
 2. **Add or update a deviation record** that scopes precisely to the alert.
-   Prefer the narrowest scope that is appropriate:
-   - a `code-identifier` deviation referenced from the exact line, statement,
+   Prefer the one narrowest scope that is appropriate in the following order:
+   1. a `code-identifier` deviation referenced from the exact line, statement,
      function, or block, via an attribute
      (`[[codeql::<standard>_deviation("...")]]`) or a comment marker
      (`// codeql::<standard>_deviation(...)`,
      `// codeql::<standard>_deviation_next_line(...)`, or a
      `..._deviation_begin` / `..._deviation_end` pair); or
-   - a `paths:`-scoped deviation in `coding-standards.yml` when a whole file
-     or directory is affected;
-   - a project-wide deviation only when the rule is genuinely inapplicable to
+   2. a `paths:`-scoped deviation in `coding-standards.yml` when the rule should
+     not be applied to a whole file or directory or
+   3. a project-wide deviation only when the rule is genuinely inapplicable to
      the project.
      Use `<standard>` ∈ {`misra`, `autosar`, `cert`} as appropriate for the
      alert.
-3. **Populate the deviation record** with at least:
+3. **Populate the deviation record** for deviation records with at least:
    - `rule-id` matching the alert’s rule identifier;
    - `query-id` matching the alert’s `@id` (when the deviation is meant to
      cover a single sub-query of the rule);
@@ -167,12 +179,12 @@ When an alert is judged to be a false positive, the autofix PR must:
    - `scope`, `background`, and `requirements` when they help a reviewer
      audit the decision;
    - a `raised-by` entry (and leave `approved-by` for a human reviewer).
-4. **Place the deviation entry** in an existing `coding-standards.yml` if one
-   exists in an appropriate directory; otherwise create one at the most
-   specific directory whose subtree is affected. When using a `permit-id`,
-   reference an existing permit if one matches; do not invent new permit IDs
-   unless necessary.
-5. **In the PR description**, explicitly state that the alert is being
+4. **Place the deviation entry** of types 2. and 3. in an existing
+   `coding-standards.yml` if one exists in an appropriate directory; 
+   otherwise create one at the most specific directory whose subtree is
+   affected. When using a `permit-id`, reference an existing permit
+   if one matches; do not invent new permit IDs unless necessary.
+6. **In the PR description**, explicitly state that the alert is being
    handled as a false positive via a deviation (not by code change), link to
    the
   [deviation mechanism documentation](https://github.com/github/codeql-coding-standards/blob/main/docs/user_manual.md#applying-deviations),
@@ -181,3 +193,4 @@ When an alert is judged to be a false positive, the autofix PR must:
 A false-positive PR should therefore contain **only** the deviation entry
 and/or the in-source deviation marker — no changes to logic, no edits to
 build outputs, and no edits to `.gitignore`.
+
