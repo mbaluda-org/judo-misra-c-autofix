@@ -293,7 +293,7 @@ static void judo_main(const struct program_options *options)
 
     struct judo_error error = {0};
     struct judo_value *root;
-    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, memfunc);
+    const enum judo_result result = judo_parse(dynbuf, dynbuf_length, &root, &error, NULL, &memfunc);
     if (result != JUDO_RESULT_SUCCESS)
     {
         if (result == JUDO_RESULT_OUT_OF_MEMORY)
@@ -323,7 +323,7 @@ static void judo_main(const struct program_options *options)
     }
 
     free(dynbuf);
-    judo_free(root, NULL, memfunc);
+    judo_free(root, NULL, &memfunc);
 }
 
 int main(int argc, char *argv[])
