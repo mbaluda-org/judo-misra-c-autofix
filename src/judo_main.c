@@ -169,7 +169,7 @@ static void print_tree(struct judo_value *value, const char *source, const struc
                 putchar(',');
             }
         }
-        putchar('}');
+        (void)putchar('}');
         break;
 
     default:
