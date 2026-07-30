@@ -209,7 +209,7 @@ static bool is_bounded(const uint8_t *string, int32_t length, int32_t cursor, in
     return bounded;
 }
 
-static unichar utf8_decode(const uint8_t *string, int32_t length, int32_t cursor, int32_t *byte_count)
+static unichar utf8_decode(const uint8_t string[], int32_t length, int32_t cursor, int32_t *byte_count)
 {
     unichar codepoint = BAD_CHARACTER_ENCODING;
     if (byte_count != NULL)
@@ -291,9 +291,6 @@ static unichar utf8_decode(const uint8_t *string, int32_t length, int32_t cursor
     // The acceptance state for the UTF-8 DFA.
     static const uint8_t DFA_ACCEPTANCE_STATE = 0;
 
-    // The string must be unsigned.
-    const uint8_t *bytes = (const uint8_t *)&string[cursor];
-
     // Check for the END of the string.
     if ((length >= 0) && (cursor >= length))
     {
@@ -302,14 +299,14 @@ static unichar utf8_decode(const uint8_t *string, int32_t length, int32_t cursor
     else
     {
         // Lookup expected UTF-8 sequence length based on the first byte.
-        int32_t seqlen = (int32_t)bytes_needed_for_UTF8_sequence[bytes[0]];
+        int32_t seqlen = (int32_t)bytes_needed_for_UTF8_sequence[string[cursor]];
 
         // Verify the sequence isn't truncated by the end of the string.
         if (length < 0)
         {
             for (int32_t i = 1; i < seqlen; i++)
             {
-                if (bytes[i] == UNICHAR_C('\0'))
+                if (string[cursor + i] == UNICHAR_C('\0'))
                 {
                     seqlen = 0;
                     break;
@@ -337,20 +334,20 @@ static unichar utf8_decode(const uint8_t *string, int32_t length, int32_t cursor
         if (seqlen > 0)
         {
             // Consume the first UTF-8 byte.
-            unichar value = (unichar)bytes[0] & (unichar)bytes_needed_for_UTF8_sequence[256 + seqlen];
+            unichar value = (unichar)string[cursor] & (unichar)bytes_needed_for_UTF8_sequence[256 + seqlen];
 
             // Transition to the first DFA state.
-            uint8_t state = next_UTF8_DFA[byte_to_character_class[bytes[0]]];
+            uint8_t state = next_UTF8_DFA[byte_to_character_class[string[cursor]]];
 
             // Consume the remaining UTF-8 bytes.
             for (int32_t i = 1; i < seqlen; i++)
             {
                 // Mask off the next byte.
                 // It's of the form 10xxxxxx if valid UTF-8.
-                value = (value << UNICHAR_C(6)) | ((unichar)bytes[i] & UNICHAR_C(0x3F));
+                value = (value << UNICHAR_C(6)) | ((unichar)string[cursor + i] & UNICHAR_C(0x3F));
 
                 // Transition to the next DFA state.
-                state = next_UTF8_DFA[(const uint8_t)state + byte_to_character_class[bytes[i]]];
+                state = next_UTF8_DFA[(const uint8_t)state + byte_to_character_class[string[cursor + i]]];
             }
 
             // Verify the encoded character was well-formed.
@@ -444,7 +441,7 @@ static unichar parse_character(const char *string)
     return codepoint;
 }
 
-static bool is_match(const uint8_t *string, const char *prefix, int32_t string_length)
+static bool is_match(const uint8_t string[], const char prefix[], int32_t string_length)
 {
     bool match = true;
     int32_t index = 0;
@@ -475,7 +472,7 @@ static bool is_match(const uint8_t *string, const char *prefix, int32_t string_l
 #if defined(JUDO_HAVE_FLOATS)
 #if defined(JUDO_JSON5)
 // This atol() implementation exclusively parses hexidecimal numbers.
-static enum judo_result json_atol(const char *string, int32_t string_length, judo_number *number)
+static enum judo_result json_atol(const char string[], int32_t string_length, judo_number *number)
 {
     enum judo_result result;
     judo_number value = (judo_number)0.0;
@@ -545,7 +542,7 @@ static enum judo_result json_atol(const char *string, int32_t string_length, jud
 #endif
 
 // Locale independent atof() implementation.
-static enum judo_result json_atof(const char *string, int32_t string_length, judo_number *number)
+static enum judo_result json_atof(const char string[], int32_t string_length, judo_number *number)
 {
     enum judo_result result;
     judo_number value = (judo_number)0.0;
