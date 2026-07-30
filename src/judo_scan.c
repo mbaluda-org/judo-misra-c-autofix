@@ -410,7 +410,7 @@ static int32_t utf8_encode(unichar codepoint, char bytes[4])
     return length;
 }
 
-static unichar parse_character(const char *string)
+static unichar parse_character(const char string[])
 {
     unichar codepoint = UNICHAR_C(0x0);
     int32_t index = 0;
@@ -418,24 +418,24 @@ static unichar parse_character(const char *string)
     // Parse hexadecimal digits.
     while (string[index] != '\0')
     {
-        char digit;
+        int32_t digit;
         const char c = string[index];
         index += 1;
 
         if (c <= '9')
         {
             assert('0' <= c); // LCOV_EXCL_BR_LINE
-            digit = c - '0';
+            digit = (int32_t)c - (int32_t)'0';
         }
         else if (c <= 'F')
         {
             assert('A' <= c); // LCOV_EXCL_BR_LINE
-            digit = (c - 'A') + 10;
+            digit = ((int32_t)c - (int32_t)'A') + 10;
         }
         else
         {
             assert(('a' <= c) && (c <= 'f')); // LCOV_EXCL_BR_LINE
-            digit = (c - 'a') + 10;
+            digit = ((int32_t)c - (int32_t)'a') + 10;
         }
 
         codepoint = (codepoint * UNICHAR_C(16)) + (unichar)digit;
@@ -444,7 +444,7 @@ static unichar parse_character(const char *string)
     return codepoint;
 }
 
-static bool is_match(const uint8_t *string, const char *prefix, int32_t string_length)
+static bool is_match(const uint8_t string[], const char prefix[], int32_t string_length)
 {
     bool match = true;
     int32_t index = 0;
@@ -475,13 +475,12 @@ static bool is_match(const uint8_t *string, const char *prefix, int32_t string_l
 #if defined(JUDO_HAVE_FLOATS)
 #if defined(JUDO_JSON5)
 // This atol() implementation exclusively parses hexidecimal numbers.
-static enum judo_result json_atol(const char *string, int32_t string_length, judo_number *number)
+static enum judo_result json_atol(const char string[], int32_t string_length, judo_number *number)
 {
     enum judo_result result;
     judo_number value = (judo_number)0.0;
     judo_number sign = (judo_number)1.0;
     int32_t index = 0;
-    char c;
 
     // Parse sign.
     if (string[index] == '+')
@@ -507,26 +506,26 @@ static enum judo_result json_atol(const char *string, int32_t string_length, jud
     // Parse hexadecimal digits.
     while (index < string_length)
     {
-        c = string[index];
+        const char c = string[index];
+        int32_t digit;
         index += 1;
 
         if (c <= '9')
         {
             assert('0' <= c); // LCOV_EXCL_BR_LINE
-            c = c - '0';
+            digit = (int32_t)c - (int32_t)'0';
         }
         else if (c <= 'F')
         {
             assert('A' <= c); // LCOV_EXCL_BR_LINE
-            c = (c - 'A') + 10;
+            digit = ((int32_t)c - (int32_t)'A') + 10;
         }
         else
         {
             assert(('a' <= c) && (c <= 'f')); // LCOV_EXCL_BR_LINE
-            c = (c - 'a') + 10;
+            digit = ((int32_t)c - (int32_t)'a') + 10;
         }
 
-        const int32_t digit = (int32_t)c;
         value = (value * (judo_number)16.0) + (judo_number)digit;
     }
 
@@ -545,7 +544,7 @@ static enum judo_result json_atol(const char *string, int32_t string_length, jud
 #endif
 
 // Locale independent atof() implementation.
-static enum judo_result json_atof(const char *string, int32_t string_length, judo_number *number)
+static enum judo_result json_atof(const char string[], int32_t string_length, judo_number *number)
 {
     enum judo_result result;
     judo_number value = (judo_number)0.0;
@@ -581,8 +580,7 @@ static enum judo_result json_atof(const char *string, int32_t string_length, jud
             break;
         }
 
-        const char c = codepoint - '0';
-        const int32_t n = (int32_t)c;
+        const int32_t n = (int32_t)codepoint - (int32_t)'0';
         value = (value * (judo_number)10.0) + (judo_number)n;
     }
 
@@ -599,8 +597,7 @@ static enum judo_result json_atof(const char *string, int32_t string_length, jud
                 break;
             }
 
-            const char c = codepoint - '0';
-            const int32_t n = (int32_t)c;
+            const int32_t n = (int32_t)codepoint - (int32_t)'0';
             value = (value * (judo_number)10.0) + (judo_number)n;
             exponent = exponent - 1;
         }
@@ -634,8 +631,7 @@ static enum judo_result json_atof(const char *string, int32_t string_length, jud
 
             for (;;)
             {
-                const char c = codepoint - '0';
-                const int32_t n = (int32_t)c;
+                const int32_t n = (int32_t)codepoint - (int32_t)'0';
                 exp_value = (exp_value * 10) + (int32_t)n;
                 if (index >= string_length)
                 {
@@ -1119,18 +1115,18 @@ static enum judo_result scan_string(const struct scanner *scanner, struct token 
                 char digits[5] = {'\0', '\0', '\0', '\0', '\0'};
                 int32_t digit_count = 0;
 
-                switch ((char)string[index])
+                switch (string[index])
                 {
-                case '"': case '\\': case '/': case 'b':
-                case 'f': case 'n': case 'r': case 't':
+                case (uint8_t)'"': case (uint8_t)'\\': case (uint8_t)'/': case (uint8_t)'b':
+                case (uint8_t)'f': case (uint8_t)'n': case (uint8_t)'r': case (uint8_t)'t':
 #if defined(JUDO_JSON5)
-                case '\'': case 'v': case '0':
+                case (uint8_t)'\'': case (uint8_t)'v': case (uint8_t)'0':
 #endif
                     index += 1; // consume escape character
                     break;
 
 #if defined(JUDO_JSON5)
-                case 'x':
+                case (uint8_t)'x':
                     index += 1; // consume 'x'
                     while (is_bounded(string, scanner->string_length, index, 1))
                     {
@@ -1148,7 +1144,7 @@ static enum judo_result scan_string(const struct scanner *scanner, struct token 
                     break;
 #endif
 
-                case 'u':
+                case (uint8_t)'u':
                     index += 1; // consume 'u'
                     while (is_bounded(string, scanner->string_length, index, 1))
                     {
