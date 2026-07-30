@@ -15,16 +15,51 @@
 // by the command-line interface and Judo examples. This code does not
 // attempt to be MISRA compliant.
 
-#include <stdio.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "judo_stdin.h"
+
 #if defined(_WIN32)
 #include <io.h>
-#include <fcntl.h>
+#define JUDO_STDIN_FD 0
+#define JUDO_STDERR_FD 2
 #else
 #include <unistd.h>
+#define JUDO_STDIN_FD STDIN_FILENO
+#define JUDO_STDERR_FD STDERR_FILENO
 #endif
+
+bool judo_writeall(int32_t fd, const char buffer[], size_t length)
+{
+    bool success = true;
+#if defined(_WIN32)
+    int32_t bytes_written = 0;
+#else
+    ssize_t bytes_written = 0;
+#endif
+
+    for (size_t offset = 0u; offset < length; offset += (size_t)bytes_written)
+    {
+        const size_t remaining = length - offset;
+#if defined(_WIN32)
+        const uint32_t chunk_length = (remaining > (size_t)INT_MAX) ? (uint32_t)INT_MAX : (uint32_t)remaining;
+        bytes_written = _write(fd, &buffer[offset], chunk_length);
+#else
+        bytes_written = write(fd, &buffer[offset], remaining);
+#endif
+        if (bytes_written <= 0)
+        {
+            success = false;
+            break;
+        }
+    }
+
+    return success;
+}
 
 char *judo_readstdin(size_t *size)
 {
@@ -32,17 +67,13 @@ char *judo_readstdin(size_t *size)
     size_t dynbuf_length = 0;
     size_t dynbuf_capacity = 0;
 
-#if defined(_WIN32)
-    const int stdin_fd = _fileno(stdin);
-#endif
-
     for (;;)
     {
         char buffer[4096];
 #if defined(_WIN32)
-        const int bytes_read = _read(stdin_fd, buffer, sizeof(buffer));
+        const int32_t bytes_read = _read(JUDO_STDIN_FD, buffer, sizeof(buffer));
 #else
-        const ssize_t bytes_read = read(STDIN_FILENO, buffer, sizeof(buffer));
+        const ssize_t bytes_read = read(JUDO_STDIN_FD, buffer, sizeof(buffer));
 #endif
         if (bytes_read == 0)
         {
@@ -61,7 +92,7 @@ char *judo_readstdin(size_t *size)
         // This also ensures the buffer capacity remains under the maximum signed 32-bit integer.
         if (new_capacity >= 1024 * 1024 * 10)
         {
-            fprintf(stderr, "error: input too large\n");
+            (void)judo_writeall(JUDO_STDERR_FD, "error: input too large\n", sizeof("error: input too large\n") - 1u);
             free(dynbuf);
             return NULL;
         }
