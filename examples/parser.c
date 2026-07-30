@@ -22,22 +22,113 @@
 #include "judo.h"
 #include <stdio.h>
 #include <stddef.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#define DEFAULT_PAGE_SIZE 4096U
+#define MMAP_NO_FD (-1)
+#define MMAP_NO_OFFSET 0
+
+_Static_assert(sizeof(uintptr_t) == sizeof(void *), "uintptr_t must match pointer width");
 
 char *judo_readstdin(size_t *size);
 
-//! [parser_process_memory]
-void *memfunc(void *user_data, void *ptr, size_t size)
+static size_t page_size(void)
 {
-    if (ptr == NULL)
+    const long size = sysconf(_SC_PAGESIZE);
+    if (size <= 0)
     {
-        return malloc(size);
+        return DEFAULT_PAGE_SIZE;
     }
-    else
+    return (size_t)size;
+}
+
+static size_t mapping_size(size_t size)
+{
+    const size_t page_bytes = page_size();
+    size_t padding = 0U;
+    size_t rounded_size = 0U;
+
+    if (size != 0U)
     {
-        free(ptr);
-        return NULL;
+        padding = size % page_bytes;
+        if (padding != 0U)
+        {
+            padding = page_bytes - padding;
+        }
+
+        if (size <= (SIZE_MAX - padding))
+        {
+            rounded_size = size + padding;
+        }
     }
+
+    return rounded_size;
+}
+
+/*
+ * MAP_FAILED is defined by this platform as (void *)-1, and uintptr_t has the
+ * same width as a data pointer on this platform. Copy the pointer object
+ * representation to check for the all-bits-one sentinel without a direct cast.
+ */
+static uint8_t mapping_failed(const void *mapping)
+{
+    union pointer_representation
+    {
+        const void *pointer;
+        unsigned char bytes[sizeof(void *)];
+    } representation;
+    unsigned char failed_pattern[sizeof(representation.bytes)];
+    uint8_t failed = 0U;
+
+    representation.pointer = mapping;
+    (void)memset(failed_pattern, UCHAR_MAX, sizeof(failed_pattern));
+    if (memcmp(representation.bytes, failed_pattern, sizeof(representation.bytes)) == 0)
+    {
+        failed = 1U;
+    }
+
+    return failed;
+}
+
+//! [parser_process_memory]
+static void *memfunc(void *user_data, void *ptr, size_t size)
+{
+    const int prot = (int)((unsigned int)PROT_READ | (unsigned int)PROT_WRITE);
+    const int flags = (int)((unsigned int)MAP_PRIVATE | (unsigned int)MAP_ANONYMOUS);
+    const void * const context = user_data;
+    void *result = NULL;
+    size_t rounded_size = 0U;
+
+    (void)context;
+    rounded_size = mapping_size(size);
+
+    if (rounded_size != 0U)
+    {
+        if (ptr == NULL)
+        {
+            union mapping_conversion
+            {
+                const void *mapping;
+                void *result;
+            } mapped;
+
+            mapped.mapping = mmap(NULL, rounded_size, prot, flags, MMAP_NO_FD, MMAP_NO_OFFSET);
+            if (mapping_failed(mapped.mapping) == 0U)
+            {
+                result = mapped.result;
+            }
+        }
+        else
+        {
+            (void)munmap(ptr, rounded_size);
+        }
+    }
+
+    return result;
 }
 //! [parser_process_memory]
 
