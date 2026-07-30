@@ -19,31 +19,88 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
-#include <stdio.h>
 #include <stddef.h>
+#include <errno.h>
+
+#if defined(_WIN32)
+#include <io.h>
+#define JUDO_STDOUT_FD 1
+#define JUDO_STDERR_FD 2
+#else
+#include <unistd.h>
+#define JUDO_STDOUT_FD STDOUT_FILENO
+#define JUDO_STDERR_FD STDERR_FILENO
+#endif
 
 char *judo_readstdin(size_t *size);
+
+static long judo_writefd(int fd, const char *buffer, size_t length)
+{
+#if defined(_WIN32)
+    return (long)_write(fd, buffer, (unsigned int)length);
+#else
+    return (long)write(fd, buffer, length);
+#endif
+}
+
+static void write_all(int fd, const char *buffer, size_t length)
+{
+    size_t total = 0;
+    while (total < length)
+    {
+        const long written = judo_writefd(fd, &buffer[total], length - total);
+        if (written < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            break;
+        }
+        if (written == 0)
+        {
+            break;
+        }
+        total += (size_t)written;
+    }
+}
+
+static void write_string(int fd, const char *string)
+{
+    size_t length = 0;
+    while (string[length] != '\0')
+    {
+        length++;
+    }
+    write_all(fd, string, length);
+}
 
 static void process_token(struct judo_stream stream, const char *json)
 {
 //! [scanner_process_token]
     switch (stream.token)
     {
-    case JUDO_TOKEN_NULL: puts("null"); break;
-    case JUDO_TOKEN_TRUE: puts("true"); break;
-    case JUDO_TOKEN_FALSE: puts("false"); break;
-    case JUDO_TOKEN_ARRAY_BEGIN: puts("[push]"); break;
-    case JUDO_TOKEN_ARRAY_END: puts("[pop]"); break;
-    case JUDO_TOKEN_OBJECT_BEGIN: puts("{push}"); break;
-    case JUDO_TOKEN_OBJECT_END: puts("{pop}"); break;
+    case JUDO_TOKEN_NULL: write_string(JUDO_STDOUT_FD, "null\n"); break;
+    case JUDO_TOKEN_TRUE: write_string(JUDO_STDOUT_FD, "true\n"); break;
+    case JUDO_TOKEN_FALSE: write_string(JUDO_STDOUT_FD, "false\n"); break;
+    case JUDO_TOKEN_ARRAY_BEGIN: write_string(JUDO_STDOUT_FD, "[push]\n"); break;
+    case JUDO_TOKEN_ARRAY_END: write_string(JUDO_STDOUT_FD, "[pop]\n"); break;
+    case JUDO_TOKEN_OBJECT_BEGIN: write_string(JUDO_STDOUT_FD, "{push}\n"); break;
+    case JUDO_TOKEN_OBJECT_END: write_string(JUDO_STDOUT_FD, "{pop}\n"); break;
     case JUDO_TOKEN_NUMBER:
-        printf("number: %.*s\n", stream.where.length, &json[stream.where.offset]);
+        write_string(JUDO_STDOUT_FD, "number: ");
+        write_all(JUDO_STDOUT_FD, &json[stream.where.offset], stream.where.length);
+        write_all(JUDO_STDOUT_FD, "\n", 1);
         break;
     case JUDO_TOKEN_STRING:
-        printf("string: %.*s\n", stream.where.length, &json[stream.where.offset]);
+        write_string(JUDO_STDOUT_FD, "string: ");
+        write_all(JUDO_STDOUT_FD, &json[stream.where.offset], stream.where.length);
+        write_all(JUDO_STDOUT_FD, "\n", 1);
         break;
     case JUDO_TOKEN_OBJECT_NAME:
-        printf("{name: %.*s}\n", stream.where.length, &json[stream.where.offset]);
+        write_string(JUDO_STDOUT_FD, "{name: ");
+        write_all(JUDO_STDOUT_FD, &json[stream.where.offset], stream.where.length);
+        write_all(JUDO_STDOUT_FD, "}\n", 2);
         break;
     default:
         break;
@@ -59,7 +116,7 @@ int main(int argc, char *argv[])
 //! [scanner_process_stdin]
     if (json == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
+        write_string(JUDO_STDERR_FD, "error: failed to read stdin\n");
         return 2;
     }
 
@@ -79,7 +136,9 @@ int main(int argc, char *argv[])
         }
         else
         {
-            fprintf(stderr, "error: %s\n", stream.error);
+            write_string(JUDO_STDERR_FD, "error: ");
+            write_string(JUDO_STDERR_FD, stream.error);
+            write_all(JUDO_STDERR_FD, "\n", 1);
             return 1;
         }
     }

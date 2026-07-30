@@ -20,11 +20,62 @@
 // This code does not attempt to be MISRA compliant.
 
 #include "judo.h"
-#include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <errno.h>
+
+#if defined(_WIN32)
+#include <io.h>
+#define JUDO_STDOUT_FD 1
+#define JUDO_STDERR_FD 2
+#else
+#include <unistd.h>
+#define JUDO_STDOUT_FD STDOUT_FILENO
+#define JUDO_STDERR_FD STDERR_FILENO
+#endif
 
 char *judo_readstdin(size_t *size);
+
+static long judo_writefd(int fd, const char *buffer, size_t length)
+{
+#if defined(_WIN32)
+    return (long)_write(fd, buffer, (unsigned int)length);
+#else
+    return (long)write(fd, buffer, length);
+#endif
+}
+
+static void write_all(int fd, const char *buffer, size_t length)
+{
+    size_t total = 0;
+    while (total < length)
+    {
+        const long written = judo_writefd(fd, &buffer[total], length - total);
+        if (written < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            break;
+        }
+        if (written == 0)
+        {
+            break;
+        }
+        total += (size_t)written;
+    }
+}
+
+static void write_string(int fd, const char *string)
+{
+    size_t length = 0;
+    while (string[length] != '\0')
+    {
+        length++;
+    }
+    write_all(fd, string, length);
+}
 
 //! [parser_process_memory]
 void *memfunc(void *user_data, void *ptr, size_t size)
@@ -55,45 +106,46 @@ void print_tree(const char *source, struct judo_value *value)
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         span = judo_value2span(value);
-        printf("%.*s", span.length, &source[span.offset]);
+        write_all(JUDO_STDOUT_FD, &source[span.offset], span.length);
         break;
     // [cont...]
 //! [parser_process_traverse]
 
 //! [parser_process_array]
     case JUDO_TYPE_ARRAY:
-        putchar('[');
+        write_all(JUDO_STDOUT_FD, "[", 1);
         elem = judo_first(value);
         while (elem != NULL)
         {
             print_tree(source, elem);
             if (judo_next(elem) != NULL)
             {
-                putchar(',');
+                write_all(JUDO_STDOUT_FD, ",", 1);
             }
             elem = judo_next(elem);
         }
-        putchar(']');
+        write_all(JUDO_STDOUT_FD, "]", 1);
         break;
     // [cont...]
 //! [parser_process_array]
 
 //! [parser_process_object]
     case JUDO_TYPE_OBJECT:
-        putchar('{');
+        write_all(JUDO_STDOUT_FD, "{", 1);
         member = judo_membfirst(value);
         while (member != NULL)
         {
             span = judo_name2span(member);
-            printf("%.*s:", span.length, &source[span.offset]);
+            write_all(JUDO_STDOUT_FD, &source[span.offset], span.length);
+            write_all(JUDO_STDOUT_FD, ":", 1);
             print_tree(source, judo_membvalue(member));
             if (judo_membnext(member) != NULL)
             {
-                putchar(',');
+                write_all(JUDO_STDOUT_FD, ",", 1);
             }
             member = judo_membnext(member);
         }
-        putchar('}');
+        write_all(JUDO_STDOUT_FD, "}", 1);
         break;
 //! [parser_process_object]
 
@@ -110,7 +162,7 @@ int main(int argc, char *argv[])
 //! [parser_process_stdin]
     if (json == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
+        write_string(JUDO_STDERR_FD, "error: failed to read stdin\n");
         return 2;
     }
 
@@ -125,7 +177,9 @@ int main(int argc, char *argv[])
     }
     else
     {
-        fprintf(stderr, "error: %s\n", error.description);
+        write_string(JUDO_STDERR_FD, "error: ");
+        write_string(JUDO_STDERR_FD, error.description);
+        write_all(JUDO_STDERR_FD, "\n", 1);
         return 1;
     }
 //! [parser_process_input]
