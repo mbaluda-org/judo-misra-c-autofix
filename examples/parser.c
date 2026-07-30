@@ -55,45 +55,45 @@ void print_tree(const char *source, struct judo_value *value)
     case JUDO_TYPE_NUMBER:
     case JUDO_TYPE_STRING:
         span = judo_value2span(value);
-        printf("%.*s", span.length, &source[span.offset]);
+        (void)printf("%.*s", span.length, &source[span.offset]);
         break;
     // [cont...]
 //! [parser_process_traverse]
 
 //! [parser_process_array]
     case JUDO_TYPE_ARRAY:
-        putchar('[');
+        (void)putchar('[');
         elem = judo_first(value);
         while (elem != NULL)
         {
             print_tree(source, elem);
             if (judo_next(elem) != NULL)
             {
-                putchar(',');
+                (void)putchar(',');
             }
             elem = judo_next(elem);
         }
-        putchar(']');
+        (void)putchar(']');
         break;
     // [cont...]
 //! [parser_process_array]
 
 //! [parser_process_object]
     case JUDO_TYPE_OBJECT:
-        putchar('{');
+        (void)putchar('{');
         member = judo_membfirst(value);
         while (member != NULL)
         {
             span = judo_name2span(member);
-            printf("%.*s:", span.length, &source[span.offset]);
+            (void)printf("%.*s:", span.length, &source[span.offset]);
             print_tree(source, judo_membvalue(member));
             if (judo_membnext(member) != NULL)
             {
-                putchar(',');
+                (void)putchar(',');
             }
             member = judo_membnext(member);
         }
-        putchar('}');
+        (void)putchar('}');
         break;
 //! [parser_process_object]
 
@@ -104,31 +104,40 @@ void print_tree(const char *source, struct judo_value *value)
 
 int main(int argc, char *argv[])
 {
+    int exit_code = 0;
 //! [parser_process_stdin]
     size_t json_len = 0;
     const char *json = judo_readstdin(&json_len);
 //! [parser_process_stdin]
     if (json == NULL)
     {
-        fprintf(stderr, "error: failed to read stdin\n");
-        return 2;
+        exit_code = 2;
     }
-
-//! [parser_process_input]
-    struct judo_error error = {0};
-    struct judo_value *root;
-    enum judo_result result = judo_parse(json, json_len, &root, &error, NULL, memfunc);
-    if (result == JUDO_RESULT_SUCCESS)
+    else if (json_len > (size_t)INT32_MAX)
     {
-        print_tree(json, root);
-        judo_free(root, NULL, memfunc);
+        exit_code = 2;
     }
     else
     {
-        fprintf(stderr, "error: %s\n", error.description);
-        return 1;
-    }
 //! [parser_process_input]
+        struct judo_error error = {0};
+        struct judo_value *root;
+        const enum judo_result parse_result = judo_parse(json, (int32_t)json_len, &root, &error, NULL, &memfunc);
+        if (parse_result == JUDO_RESULT_SUCCESS)
+        {
+            print_tree(json, root);
+            const enum judo_result free_result = judo_free(root, NULL, &memfunc);
+            if (free_result != JUDO_RESULT_SUCCESS)
+            {
+                exit_code = 2;
+            }
+        }
+        else
+        {
+            exit_code = 1;
+        }
+//! [parser_process_input]
+    }
 
-    return 0;
+    return exit_code;
 }
